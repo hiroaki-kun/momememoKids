@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>momememoKids（もめめもきっず） - 子どものもめごと冷静記録ツール</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              550: '#0ea5e9',
+              900: '#0369a1',
+            },
+            appBg: '#FAF7F0' // 優しいクリーム色
+          },
+          animation: {
+            'fadeIn': 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'slideUp': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'popIn': 'popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards',
+            'bounce-short': 'bounceShort 0.3s ease-out',
+            'breath': 'breath 8s ease-in-out infinite',
+            'pulse-ring': 'pulseRing 1.5s cubic-bezier(0.215, 0.610, 0.355, 1) infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'scale(0.97)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            popIn: {
+              '0%': { transform: 'scale(0.9) translateY(10px)', opacity: '0' },
+              '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+            },
+            bounceShort: {
+              '0%, 100%': { transform: 'translate(-50%, 0)' },
+              '50%': { transform: 'translate(-50%, -6px)' }
+            },
+            breath: {
+              '0%, 100%': { transform: 'scale(0.9)', backgroundColor: 'rgba(238, 255, 0, 0.4)' },
+              '40%': { transform: 'scale(1.18)', backgroundColor: 'rgba(238, 255, 0, 0.25)' },
+              '50%': { transform: 'scale(1.18)', backgroundColor: 'rgba(238, 255, 0, 0.35)' },
+              '90%': { transform: 'scale(0.9)', backgroundColor: 'rgba(238, 255, 0, 0.25)' }
+            },
+            pulseRing: {
+              '0%': { transform: 'scale(0.95)', boxShadow: '0 0 0 0 rgba(238, 255, 0, 0.7)' },
+              '70%': { transform: 'scale(1)', boxShadow: '0 0 0 10px rgba(238, 255, 0, 0)' },
+              '100%': { transform: 'scale(0.95)', boxShadow: '0 0 0 0 rgba(238, 255, 0, 0)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- html2pdf.js CDN (Client-side PDF Generator) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      -webkit-overflow-scrolling: touch;
+      font-feature-settings: "palt";
+    }
+    
+    /* モバイルのタップ効果の排除と滑らかな操作 */
+    button, select, input, textarea, a, [onclick] {
+      -webkit-tap-highlight-color: transparent;
+      outline: none !important;
+    }
+
+    /* ネイティブアプリ風の弾力のあるスクロール抑制 */
+    html, body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* 印刷およびPDF書き出し時の A4 レイアウト調整 */
+    @media print, .print-pdf-mode {
+      html, body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        height: auto !important;
+        overflow: visible !important;
+        overscroll-behavior-y: auto !important;
+        padding-bottom: 0 !important;
+        margin: 0 !important;
+      }
+      
+      /* レポート出力時に不要なヘッダー・フッター・ナビを完全非表示化 */
+      header, footer, nav, button, .no-print, [onclick],
+      #tab-list, #tab-form, #tab-timeline_view, #tab-info, #tab-cooldown,
+      .fixed, .sticky, #image-zoom-modal, #premium-modal, #confirm-modal, #toast-container {
+        display: none !important;
+      }
+      
+      /* レポートエリアだけを最優先表示 */
+      #tab-detail {
+        display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+      
+      main {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      
+      #printable-area {
+        border: 2px solid #334155 !important;
+        box-shadow: none !important;
+        padding: 24px !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        background: #ffffff !important;
+      }
+
+      /* 改ページ制御 */
+      #printable-area > div {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 24px !important;
+      }
+
+      /* 証拠写真 */
+      #detail-attached-images-container {
+        display: block !important;
+      }
+      #detail-attached-images-container > div {
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 24px !important;
+        max-height: none !important;
+        border: 2px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 8px !important;
+      }
+      #detail-attached-images-container img {
+        max-height: 10cm !important;
+        width: auto !important;
+        margin: 0 auto !important;
+        display: block !important;
+      }
+
+      /* カラー背景を強制適用 */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+    
+    /* スマホ下部セーフエリア対応 */
+    .pb-safe {
+      padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    .bottom-nav-height {
+      height: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    }
+  </style>
+</head>
+<body class="bg-[#FAF7F0] text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-sky-150">
+
+  <!-- ======================================= -->
+  <!-- MOBILE HEADER (NATIVE APP STYLE)        -->
+  <!-- ======================================= -->
+  <header class="bg-sky-100 border-b border-slate-700 sticky top-0 z-40 px-4 py-3 pt-safe no-print shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform" onclick="navigate('form')" title="新規追加画面を表示">
+        <!-- 題字の横のイラストマーク：背景を蛍光黄色、天秤アイコンを黒色に維持、枠線を濃いグレーに変更 -->
+        <div class="bg-[#eeff00] p-2 rounded-2xl text-slate-900 shadow-sm border border-slate-700">
+          <i data-lucide="scale" class="w-5 h-5 stroke-[2.5] text-slate-900"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-semibold tracking-tight text-slate-900 flex items-center gap-1.5">
+            momememoKids 
+          </h1>
+          <p class="text-[9px] text-slate-600 flex items-center gap-1">
+            子どものもめごとの冷静記録。モンスターから身を守るために。
+          </p>
+        </div>
+      </div>
+
+      <!-- 右側クイックアクション（水色背景に合う白背景ボタン、枠線を濃いグレーに変更） -->
+      <div class="flex items-center gap-2">
+        <button onclick="navigate('cooldown')" class="w-9 h-9 flex items-center justify-center bg-white/85 active:scale-90 hover:bg-white border border-slate-700 rounded-xl text-sky-600 transition-all" title="心を落ち着ける深呼吸">
+          <i data-lucide="wind" class="w-4.5 h-4.5 stroke-[2]"></i>
+        </button>
+        <button onclick="navigate('info')" class="w-9 h-9 flex items-center justify-center bg-white/85 active:scale-90 hover:bg-white border border-slate-700 rounded-xl text-slate-700 transition-all" aria-label="ヘルプ">
+          <i data-lucide="help-circle" class="w-4.5 h-4.5 stroke-[2]"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================= -->
+  <!-- MAIN CONTAINER (SCROLL CONTENT AREA)    -->
+  <!-- ======================================= -->
+  <main class="flex-1 w-full max-w-md mx-auto px-4 py-4 space-y-4 pb-28">
+
+    <!-- ======================================= -->
+    <!-- TAB 1: LIST VIEW                        -->
+    <!-- ======================================= -->
+    <div id="tab-list" class="tab-content space-y-4 animate-fadeIn hidden">
+      
+      <!-- 検索・フィルターエリア、枠線を濃いグレーに変更 -->
+      <div class="bg-[#F4EFE6] border-2 border-slate-700 p-3.5 rounded-2xl shadow-sm">
+        <div class="relative">
+          <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-700 stroke-[2]"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="相手の名前・場所・内容で検索..." 
+            class="w-full pl-10 pr-4 py-3 text-base bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:bg-white focus:ring-2 focus:ring-slate-700 transition-all text-slate-900"
+            oninput="handleFilterChange()"
+          >
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center px-1">
+        <span class="text-xs text-slate-755">記録件数: <span id="filtered-count" class="text-sm font-semibold">0</span> 件</span>
+      </div>
+
+      <!-- リストコンテナ -->
+      <div id="log-list-container" class="space-y-3">
+        <!-- JSで動的に構築 -->
+      </div>
+    </div>
+
+    <!-- ======================================= -->
+    <!-- TAB 2: FORM (MULTI-STEP) - DEFAULT HOME  -->
+    <!-- ======================================= -->
+    <!-- 枠線を濃いグレーに変更 -->
+    <div id="tab-form" class="tab-content bg-white border border-slate-700 rounded-3xl shadow-sm overflow-hidden animate-fadeIn">
+      <!-- フォームヘッダー、枠線を濃いグレーに変更 -->
+      <div class="bg-sky-50/50 p-4 border-b border-slate-700 flex justify-between items-center">
+        <div>
+          <h2 class="text-xs font-semibold text-slate-850 flex items-center gap-1.5">
+            <i data-lucide="edit-3" class="w-4 h-4 text-sky-600 stroke-[2]"></i>
+            <span id="form-title-text" class="text-slate-900">新規追加</span>
+          </h2>
+          <p class="text-[9px] text-slate-500 mt-0.5">客観的事実を入力して概要書をまとめましょう</p>
+        </div>
+        <button onclick="navigate('list')" class="text-[11px] text-slate-700 active:scale-95 bg-white border border-slate-700 px-3 py-1.5 rounded-xl shadow-xs transition-transform">
+          一覧を見る
+        </button>
+      </div>
+
+      <!-- スマホ用スマート進行インジケーター（①→②→③を水色（sky系）に変更、枠線を濃いグレーに変更） -->
+      <div class="bg-slate-50/50 border-b border-slate-700 py-3.5 px-4">
+        <div class="flex items-center justify-between max-w-xs mx-auto">
+          <button type="button" onclick="setFormStep(0)" class="flex flex-col items-center gap-1 focus:outline-none" id="step-btn-0">
+            <div id="step-num-0" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-sky-500 text-white shadow-xs border border-slate-700">1</div>
+            <span class="text-[9px] text-slate-800" id="step-txt-0">基本情報</span>
+          </button>
+          
+          <div id="step-bar-0" class="flex-1 h-0.5 mx-1 -mt-4 bg-slate-700"></div>
+          
+          <button type="button" onclick="setFormStep(1)" class="flex flex-col items-center gap-1 focus:outline-none" id="step-btn-1">
+            <div id="step-num-1" class="w-7 h-7 rounded-full flex items-center justify-center text-xs bg-sky-50 border border-slate-700 text-sky-300">2</div>
+            <span class="text-[9px] text-slate-400" id="step-txt-1">学校・写真・病院</span>
+          </button>
+          
+          <div id="step-bar-1" class="flex-1 h-0.5 mx-1 -mt-4 bg-slate-700"></div>
+          
+          <button type="button" onclick="setFormStep(2)" class="flex flex-col items-center gap-1 focus:outline-none" id="step-btn-2">
+            <div id="step-num-2" class="w-7 h-7 rounded-full flex items-center justify-center text-xs bg-sky-50 border border-slate-700 text-sky-300">3</div>
+            <span class="text-[9px] text-slate-400" id="step-txt-2">相談・メモ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- フォーム内容エリア -->
+      <form id="log-form" class="p-4 space-y-4" onsubmit="event.preventDefault();">
+        <input type="hidden" id="form-id">
+        <div id="form-error-banner" class="bg-rose-50 border border-slate-700 p-3 rounded-xl flex items-center gap-2 text-rose-955 text-[10px] hidden">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-600"></i>
+          <span id="form-error-text" class="text-rose-900">入力内容に不備があります。</span>
+        </div>
+
+        <!-- ======================================= -->
+        <!-- STEP 0: 基本情報セクション -->
+        <!-- ======================================= -->
+        <div id="form-step-0-container" class="space-y-4 animate-fadeIn">
+          <!-- 背景色を優しいベージュに統一、枠線を濃いグレーに変更 -->
+          <div class="bg-[#FAF7F0] border border-slate-700 p-3 rounded-xl text-[10px] text-slate-700 leading-relaxed flex items-start gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-sky-600 shrink-0 mt-0.5"></i>
+            <span>いつ、誰と発生したもめごとかを入力します。</span>
+          </div>
+
+          <!-- カテゴリ1: いつ・わが子の状況、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2">
+              <h3 class="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                いつ・わが子の状況
+              </h3>
+            </div>
+
+            <!-- 発生日付、枠線を濃いグレーに変更 -->
+            <div>
+              <label class="flex items-center justify-between text-[11px] text-slate-700 mb-1.5">
+                <span>発生日付</span>
+                <span class="bg-sky-500 text-white px-1.5 py-0.2 rounded text-[8px]">必須</span>
+              </label>
+              <div class="relative">
+                <i data-lucide="calendar" class="w-4.5 h-4.5 text-slate-700 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="date" id="form-date" required class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 h-11">
+              </div>
+            </div>
+
+            <!-- わが子の立場 (水色で統一、枠線を濃いグレーに変更) -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">わが子の立場（役割）</label>
+              <div class="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-xl border-2 border-slate-700">
+                <button type="button" onclick="setRole('victim')" id="role-btn-victim" class="py-2 text-xs rounded-lg transition-all shadow-xs bg-sky-500 text-white border border-slate-700">被害者（側）</button>
+                <button type="button" onclick="setRole('perpetrator')" id="role-btn-perpetrator" class="py-2 text-xs rounded-lg transition-all text-slate-500 bg-transparent">加害者（側）</button>
+                <button type="button" onclick="setRole('unknown')" id="role-btn-unknown" class="py-2 text-xs rounded-lg transition-all text-slate-500 bg-transparent">不明・双方</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- カテゴリ2: 相手の情報、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2">
+              <h3 class="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                相手の情報
+              </h3>
+            </div>
+
+            <!-- 相手の名前、枠線を濃いグレーに変更 -->
+            <div>
+              <label class="flex items-center justify-between text-[11px] text-slate-700 mb-1.5">
+                <span>相手の名前（イニシャル等でも可）</span>
+                <span class="bg-sky-500 text-white px-1.5 py-0.2 rounded text-[8px]">必須</span>
+              </label>
+              <div class="relative">
+                <i data-lucide="user" class="w-4.5 h-4.5 text-slate-700 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="form-opponentName" required placeholder="例: Bくん、Aちゃん" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 h-11">
+              </div>
+            </div>
+
+            <!-- 相手の学年、枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">相手の学年・クラス</label>
+              <div class="relative">
+                <i data-lucide="graduation-cap" class="w-4.5 h-4.5 text-slate-700 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10"></i>
+                <select id="form-grade" class="w-full pl-10 pr-8 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 appearance-none cursor-pointer h-11">
+                  <optgroup label="保育園">
+                    <option value="保育園 1歳児クラス">保育園 1歳児クラス</option>
+                    <option value="保育園 2歳児クラス">保育園 2歳児クラス</option>
+                    <option value="保育園 3歳児クラス">保育園 3歳児クラス</option>
+                    <option value="保育園 4歳児クラス">保育園 4歳児クラス</option>
+                    <option value="保育園 5歳児クラス">保育園 5歳児クラス</option>
+                  </optgroup>
+                  <optgroup label="幼稚園">
+                    <option value="幼稚園 年少">幼稚園 年少</option>
+                    <option value="幼稚園 年中">幼稚園 年中</option>
+                    <option value="幼稚園 年高">幼稚園 年長</option>
+                  </optgroup>
+                  <optgroup label="小学校">
+                    <option value="小学1年生">小学1年生</option>
+                    <option value="小学2年生">小学2年生</option>
+                    <option value="小学3年生" selected>小学3年生</option>
+                    <option value="小学4年生">小学4年生</option>
+                    <option value="小学5年生">小学5年生</option>
+                    <option value="小学6年生">小学6年生</option>
+                  </optgroup>
+                  <optgroup label="中学校">
+                    <option value="中学1年生">中学1年生</option>
+                    <option value="中学2年生">中学2年生</option>
+                    <option value="中学3年生">中学3年生</option>
+                  </optgroup>
+                  <optgroup label="高校">
+                    <option value="高校1年生">高校1年生</option>
+                    <option value="高校2年生">高校2年生</option>
+                    <option value="高校3年生">高校3年生</option>
+                  </optgroup>
+                  <optgroup label="その他">
+                    <option value="その他">その他</option>
+                  </optgroup>
+                </select>
+                <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-700 text-[10px]">▼</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 当時の状況詳細、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2">
+              <h3 class="text-xs font-semibold text-slate-800 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                  発生場所・当時の状況・本人様の説明
+                </span>
+                <span class="text-[8px] bg-slate-100 text-sky-900 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-slate-700">
+                  <i data-lucide="zap" class="w-2.5 h-2.5"></i> 時刻自動検知
+                </span>
+              </h3>
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">
+                発生場所・時間帯・子どもから聞いたことや知りえたこと <span class="text-slate-500">（任意）</span>
+              </label>
+              <!-- 自動転記システムの親切な使い方ガイド、枠線を濃いグレーに変更 -->
+              <div class="text-[9px] text-slate-600 mb-2 leading-relaxed bg-white/75 p-2.5 rounded-xl border border-slate-700">
+                <p class="text-sky-850 font-semibold flex items-center gap-1 mb-0.5">
+                  <i data-lucide="zap" class="w-3.5 h-3.5"></i> 自動時系列タイムライン転記システム（連携機能）
+                </p>
+                文頭に「<strong class="text-sky-900">10:25</strong>」のように時間を入れることで自動認識されます。時間を書いた位置から、<strong class="text-sky-900">次の「改行（行替え）」があるまでの文章すべて</strong>を、自動的に「時系列タイムライン」へ直接登録します。
+              </div>
+              <div class="relative">
+                <textarea id="form-placeTime" placeholder="例: &#10;10:20 運動場の滑り台の裏。Bくんに突然押されて転んだ、と本人が泣きながら教えてくれた。&#10;10:25 チャイムが鳴り保健室へ移動した。" rows="4" class="w-full px-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900" onblur="handleTextareaBlur(this, '発生状況')"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- ナビゲーション、枠線を濃いグレーに変更 -->
+          <div class="pt-2 flex gap-2.5">
+            <button type="button" onclick="navigate('list')" class="w-1/3 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all h-11">
+              <i data-lucide="arrow-left" class="w-4 h-4 text-slate-900"></i> 戻る
+            </button>
+            <button type="button" onclick="saveLog()" class="w-1/3 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all h-11">
+              <i data-lucide="save" class="w-4 h-4 text-slate-900"></i> 保存する
+            </button>
+            <button type="button" onclick="nextFormStep(1)" class="w-1/3 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 text-xs rounded-xl text-center flex items-center justify-center gap-1 transition-all h-11 shadow-sm">
+              次へ <i data-lucide="arrow-right" class="w-4 h-4 text-slate-900"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ======================================= -->
+        <!-- STEP 1: 学校・園・病院セクション -->
+        <!-- ======================================= -->
+        <div id="form-step-1-container" class="space-y-4 animate-fadeIn hidden">
+          <!-- 背景色を優しいベージュに統一、枠線を濃いグレーに変更 -->
+          <div class="bg-[#FAF7F0] border border-slate-700 p-3 rounded-xl text-[10px] text-slate-700 leading-relaxed flex items-start gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-sky-600 shrink-0 mt-0.5"></i>
+            <span>先生からの報告内容、現場の写真アタッチ、医療機関の受診メモをまとめます。</span>
+          </div>
+
+          <!-- 学校・園での対応、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2">
+              <h3 class="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                学校・園からの報告と指導内容
+              </h3>
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">学校・園からの電話や連絡帳での連絡</label>
+              <div class="relative">
+                <input type="text" id="form-schoolCallTime" placeholder="例: 16:15頃、電話あり" class="w-full px-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 h-11">
+              </div>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">先生による指導・仲裁対応の有無</label>
+              <div class="grid grid-cols-2 gap-2.5">
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white cursor-pointer select-none text-[11px] transition-all h-11" id="teacher-action-yes-label">
+                  <input type="radio" name="teacherAction" value="あり" id="form-teacherAction-yes" class="sr-only" onchange="updateTeacherActionUI()">
+                  対応・仲裁あり
+                </label>
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white cursor-pointer select-none text-[11px] transition-all h-11" id="teacher-action-no-label">
+                  <input type="radio" name="teacherAction" value="なし" id="form-teacherAction-no" checked class="sr-only" onchange="updateTeacherActionUI()">
+                  特になし・様子見
+                </label>
+              </div>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5 flex items-center justify-between">
+                <span>先生から聞いたもめごとの詳細</span>
+                <span class="text-[8px] bg-slate-100 text-sky-900 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-slate-700">
+                  <i data-lucide="zap" class="w-2.5 h-2.5"></i> 時刻自動検知
+                </span>
+              </label>
+              <textarea id="form-teacherDetails" placeholder="例: 16:15 担任の佐藤先生から電話。お互いの言い分を聞き両者に注意したとのこと。" rows="3" class="w-full px-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900" onblur="handleTextareaBlur(this, '学校対応')"></textarea>
+            </div>
+          </div>
+
+          <!-- 怪我や破損の様子（証拠写真）、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2 flex justify-between items-center">
+              <h3 class="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                怪我・破損 of 様子（証拠写真）
+              </h3>
+              <span id="photo-quota-badge" class="text-[9px] px-2 py-0.5 rounded bg-[#FAF7F0] text-slate-700 border border-slate-700">
+                登録済み: 0枚 (制限なし)
+              </span>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-center w-full">
+                <label id="upload-label-btn" class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-sky-50/50 transition-all">
+                  <div class="flex flex-col items-center justify-center pt-3 pb-3">
+                    <i data-lucide="image" class="w-6 h-6 text-slate-700 mb-1"></i>
+                    <p class="text-xs text-slate-700">写真を選択して追加</p>
+                    <p class="text-[8px] text-slate-500 mt-0.5">※枚数制限なしで何枚でも追加・保存可能です</p>
+                  </div>
+                  <input type="file" id="form-image" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                </label>
+              </div>
+
+              <div>
+                <p class="text-[9px] text-slate-505 mb-1.5 uppercase tracking-wider">追加済みの写真一覧 (タップで拡大可能)</p>
+                <div id="image-grid-container" class="grid grid-cols-3 gap-2">
+                  <!-- JSで複数写真を動的に描画 -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 医療機関への受診状況、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2">
+              <h3 class="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                医療機関の受診結果
+              </h3>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">病院受診の有無</label>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 bg-white rounded-xl cursor-pointer select-none transition-all h-11" id="hospital-visit-none-label">
+                  <input type="radio" name="hospitalVisit" value="none" checked class="sr-only" onchange="updateHospitalVisitUI()">
+                  受診なし
+                </label>
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 bg-white rounded-xl cursor-pointer select-none transition-all h-11" id="hospital-visit-mine-label">
+                  <input type="radio" name="hospitalVisit" value="mine" class="sr-only" onchange="updateHospitalVisitUI()">
+                  わが子が受診
+                </label>
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 bg-white rounded-xl cursor-pointer select-none transition-all h-11" id="hospital-visit-opponent-label">
+                  <input type="radio" name="hospitalVisit" value="opponent" class="sr-only" onchange="updateHospitalVisitUI()">
+                  相手が受診
+                </label>
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 bg-white rounded-xl cursor-pointer select-none transition-all h-11" id="hospital-visit-both-label">
+                  <input type="radio" name="hospitalVisit" value="both" class="sr-only" onchange="updateHospitalVisitUI()">
+                  双方が受診
+                </label>
+              </div>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5">医師 of 診断書の有無</label>
+              <div class="grid grid-cols-2 gap-2.5">
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white cursor-pointer select-none text-xs transition-all h-11" id="certificate-yes-label">
+                  <input type="radio" name="medicalCertificate" value="あり" id="form-medicalCertificate-yes" class="sr-only" onchange="updateCertificateUI()">
+                  あり
+                </label>
+                <label class="flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white cursor-pointer select-none text-xs transition-all h-11" id="certificate-no-label">
+                  <input type="radio" name="medicalCertificate" value="なし" id="form-medicalCertificate-no" checked class="sr-only" onchange="updateCertificateUI()">
+                  なし
+                </label>
+              </div>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5 flex items-center justify-between">
+                <span>受診先・怪我（傷病）のメモ</span>
+                <span class="text-[8px] bg-slate-100 text-sky-900 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-slate-700">
+                  <i data-lucide="zap" class="w-2.5 h-2.5"></i> 時刻自動検知
+                </span>
+              </label>
+              <textarea id="form-hospitalDetails" placeholder="例: 17:30 さくら整形外科を受診。軽い打撲と診断。" rows="2" class="w-full px-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900" onblur="handleTextareaBlur(this, '受診メモ')"></textarea>
+            </div>
+          </div>
+
+          <!-- ナビゲーション、枠線を濃いグレーに変更 -->
+          <div class="pt-2 flex gap-2.5">
+            <button type="button" onclick="setFormStep(0)" class="w-1/3 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all h-11">
+              <i data-lucide="arrow-left" class="w-4 h-4 text-slate-900"></i> 戻る
+            </button>
+            <button type="button" onclick="saveLog()" class="w-1/3 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all h-11">
+              <i data-lucide="save" class="w-4 h-4 text-slate-900"></i> 保存する
+            </button>
+            <button type="button" onclick="setFormStep(2)" class="w-1/3 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 text-xs rounded-xl text-center flex items-center justify-center gap-1 transition-all h-11 shadow-sm">
+              次へ <i data-lucide="arrow-right" class="w-4 h-4 text-slate-900"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ======================================= -->
+        <!-- STEP 2: 外部・自由メモ・写真セクション -->
+        <!-- ======================================= -->
+        <div id="form-step-2-container" class="space-y-4 animate-fadeIn hidden">
+          <!-- 背景色を優しいベージュに統一、枠線を濃いグレーに変更 -->
+          <div class="bg-[#FAF7F0] border border-slate-700 p-3 rounded-xl text-[10px] text-slate-700 leading-relaxed flex items-start gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-sky-600 shrink-0 mt-0.5"></i>
+            <span>関係機関との連携、保護者間の交渉状況、解決フラグを設定します。</span>
+          </div>
+
+          <!-- 関係機関との連携、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2">
+              <h3 class="text-xs font-semibold text-slate-850 flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-sky-500 rounded-full"></span>
+                外部関係機関への相談状況
+              </h3>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <label class="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border-2 border-slate-700 cursor-pointer select-none active:bg-slate-50 transition-all h-12">
+                <input type="checkbox" id="form-consultationChild" class="w-4 h-4 text-sky-550 rounded border-slate-700">
+                <div>
+                  <span class="text-[10px] text-slate-800 block">児童相談所</span>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-2.5 bg-white p-2.5 rounded-xl border-2 border-slate-700 cursor-pointer select-none active:bg-slate-50 transition-all h-12">
+                <input type="checkbox" id="form-consultationPolice" class="w-4 h-4 text-sky-550 rounded border-slate-700">
+                <div>
+                  <span class="text-[10px] text-slate-800 block">警察</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5 flex items-center justify-between">
+                <span>外部機関との相談履歴</span>
+                <span class="text-[8px] bg-slate-100 text-sky-900 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-slate-700">
+                  <i data-lucide="zap" class="w-2.5 h-2.5"></i> 時刻自動検知
+                </span>
+              </label>
+              <textarea id="form-consultationDetails" placeholder="例: 14:15 児童相談所の相談員山下さんに相談。" rows="2" class="w-full px-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900" onblur="handleTextareaBlur(this, '外部相談')"></textarea>
+            </div>
+          </div>
+
+          <!-- 相手とのやりとり、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div class="border-b border-slate-700 pb-2 flex justify-between items-center">
+              <h3 class="text-xs font-semibold text-slate-855 flex items-center gap-1.5">
+                <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+                相手の対応、やり取りのメモ
+              </h3>
+              <!-- モンスター（💩）認定チェック、枠線を濃いグレーに変更 -->
+              <label id="monster-checkbox-wrapper" class="flex items-center gap-1 bg-rose-50 border border-slate-700 px-2.5 py-1 rounded-xl cursor-pointer select-none text-[10px] text-rose-800 hover:bg-rose-100 active:scale-95 transition-all shadow-xs">
+                <input type="checkbox" id="form-isMonster" class="w-3.5 h-3.5 text-rose-600 border-slate-700 rounded focus:ring-rose-500" onchange="toggleMonsterVibe(this.checked)">
+                <span id="monster-emoji" class="text-xs">💩</span> モンスター認定
+              </label>
+            </div>
+
+            <!-- 枠線を濃いグレーに変更 -->
+            <div>
+              <label class="block text-[11px] text-slate-700 mb-1.5 flex items-center justify-between">
+                <span>相手との交渉・やりとりメモ</span>
+                <span class="text-[8px] bg-slate-100 text-sky-900 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-slate-700">
+                  <i data-lucide="zap" class="w-2.5 h-2.5"></i> 時刻自動検知
+                </span>
+              </label>
+              <textarea id="form-memo" placeholder="例: 19:30 相手の保護者よりお詫びの電話あり。" rows="3" class="w-full px-3 py-2.5 text-sm bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900" onblur="handleTextareaBlur(this, '相手対応')"></textarea>
+            </div>
+          </div>
+
+          <!-- 解決状況、枠線を濃いグレーに変更 -->
+          <div class="bg-[#F4EFE6] p-4 rounded-2xl border-2 border-slate-700 shadow-sm">
+            <label class="flex items-start gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" id="form-resolved" class="w-4.5 h-4.5 text-emerald-600 border-slate-700 rounded mt-0.5">
+              <div>
+                <span class="text-xs text-slate-900 block">この件を「解決済み」としてマークする</span>
+                <p class="text-[9px] text-slate-600 leading-tight mt-0.5">
+                  解決済みにすると、未解決の一覧から区別され、解決状況に反映されます。
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- ナビゲーション、枠線を濃いグレーに変更 -->
+          <div class="pt-2 flex gap-2.5">
+            <button type="button" onclick="setFormStep(1)" class="w-1/2 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all h-11">
+              <i data-lucide="arrow-left" class="w-4 h-4 text-slate-900"></i> 戻る
+            </button>
+            <button type="button" onclick="saveLog()" class="w-1/2 py-3 bg-white hover:bg-slate-100 border-2 border-slate-700 text-slate-900 active:scale-95 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all h-11">
+              <i data-lucide="check" class="w-4 h-4 text-slate-900"></i> 保存する
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- ======================================= -->
+    <!-- TAB 3: TIMELINE VIEW                    -->
+    <!-- ======================================= -->
+    <div id="tab-timeline_view" class="tab-content space-y-4 animate-fadeIn hidden">
+      <!-- 時系列選択ヘッダー、枠線を濃いグレーに変更 -->
+      <div class="bg-[#F4EFE6] border-2 border-slate-700 p-4 rounded-2xl shadow-sm space-y-4">
+        <div class="border-b border-slate-700 pb-2.5 flex justify-between items-center">
+          <div>
+            <h3 class="text-sm text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-5 h-5 text-slate-700 stroke-[2]"></i>
+              時系列タイムライン管理
+            </h3>
+            <p class="text-xs text-slate-600 mt-0.5">もめごとの前後の詳細な事実を時系列で登録します</p>
+          </div>
+        </div>
+
+        <!-- もめごと記録の選択、枠線を濃いグレーに変更 -->
+        <div class="space-y-1.5">
+          <label class="block text-xs text-slate-700">対象の記録を選択:</label>
+          <div class="relative">
+            <select id="timeline-log-selector" onchange="changeActiveTimelineLog(this.value)" class="w-full pl-3 pr-8 py-2.5 text-base bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 appearance-none cursor-pointer h-12">
+              <!-- JSで動的生成 -->
+            </select>
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600 text-xs">▼</div>
+          </div>
+        </div>
+
+        <!-- 選択中の要約、枠線を濃いグレーに変更 -->
+        <div id="timeline-active-log-summary" class="bg-white p-3 rounded-xl border-2 border-slate-700 flex justify-between items-center text-sm">
+          <!-- JSでレンダリング -->
+        </div>
+      </div>
+
+      <!-- タイムラインの表示、枠線を濃いグレーに変更 -->
+      <div class="bg-[#F4EFE6] border-2 border-slate-700 p-4 rounded-2xl shadow-sm space-y-4">
+        <h4 class="text-xs text-slate-500 uppercase tracking-wider">
+          登録済みのタイムライン（古のできごと順）
+        </h4>
+        <div id="timeline-tab-list" class="space-y-4 relative">
+          <!-- JSでレンダリング -->
+        </div>
+      </div>
+
+      <!-- タイムラインの追加、枠線を濃いグレーに変更 -->
+      <div class="bg-[#F4EFE6] border-2 border-slate-700 p-4 rounded-2xl shadow-sm space-y-3">
+        <h4 class="text-xs text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <span>新規出来事をタイムラインに追加</span>
+          <span class="text-xs bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded border border-slate-700">手動追加</span>
+        </h4>
+
+        <!-- 枠線を濃いグレーに変更 -->
+        <div class="space-y-2.5">
+          <div class="flex gap-2">
+            <div class="w-28 shrink-0">
+              <label class="block text-[10px] text-slate-555 mb-0.5">時間帯（時間・日付）</label>
+              <input type="text" id="timeline-tab-time" placeholder="例: 10:25" class="w-full px-2.5 py-2.5 text-xs bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 h-11">
+            </div>
+            <div class="flex-1">
+              <label class="block text-[10px] text-slate-555 mb-0.5">出来事の内容</label>
+              <input type="text" id="timeline-tab-content" placeholder="例: サッカーボールの取り合いで押された" class="w-full px-2.5 py-2.5 text-xs bg-slate-50 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 focus:bg-white text-slate-900 h-11">
+            </div>
+          </div>
+          <!-- タイムラインに追加するボタンを濃い水色（bg-sky-500）、枠線を濃いグレー（border-slate-700）に修正 -->
+          <button type="button" onclick="addTimelineItemInTab()" class="w-full bg-sky-500 hover:bg-sky-600 border-2 border-slate-700 text-white font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-1 transition-all active:scale-95 h-12 shadow-sm">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            タイムラインに追加する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================= -->
+    <!-- TAB 4: DETAIL (SUMMARY) & PRINT PREVIEW  -->
+    <!-- ======================================= -->
+    <div id="tab-detail" class="tab-content space-y-4 animate-fadeIn hidden">
+      
+      <!-- 上部戻る・編集バー (印刷時は非表示、枠線を濃いグレーに変更) -->
+      <div class="bg-white p-3.5 rounded-2xl border-2 border-slate-700 shadow-sm no-print">
+        <div class="flex justify-between items-center w-full">
+          <button onclick="navigate('list')" class="text-xs text-slate-600 hover:text-sky-600 flex items-center gap-1 active:scale-95 transition-transform">
+            <i data-lucide="chevron-left" class="w-4.5 h-4.5 stroke-[2]"></i> 一覧へ
+          </button>
+          
+          <div class="flex gap-1.5 items-center">
+            <button id="edit-detail-timeline-btn" class="bg-white border-2 border-slate-700 active:scale-95 text-slate-700 px-3 py-1.5 rounded-xl text-[10px] flex items-center gap-1 transition-all h-9" title="時系列タイムラインを編集する">
+              <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-700"></i> 時系列
+            </button>
+            <button onclick="downloadPDFReport()" class="bg-sky-500 hover:bg-sky-600 active:scale-95 text-white px-3 py-1.5 rounded-xl text-[10px] flex items-center gap-1 transition-all h-9 shadow-xs" title="PDFファイルを端末に直接保存">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> PDF保存
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- メイン詳細概要エリア、枠線を濃いグレーに変更 -->
+      <div id="printable-area" class="bg-white border border-slate-700 rounded-3xl p-5 shadow-sm space-y-5 print:border-none print:p-0 print:shadow-none">
+        <!-- レポートヘッダー、枠線を濃いグレーに変更 -->
+        <div class="border-b border-slate-700 pb-4 space-y-2.5">
+          <div>
+            <h2 id="detail-title" class="text-base text-slate-900">相手: Bくん とのもめごと概要書</h2>
+            <p class="text-[10px] text-slate-500 mt-0.5">
+              発生日付: <strong id="detail-date" class="text-slate-900">2026-05-18</strong>
+            </p>
+          </div>
+        </div>
+
+        <!-- 発生場所、枠線を濃いグレーに変更 -->
+        <div class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-1.5">
+          <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+            発生場所・当時の状況・子どもの説明
+          </h3>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-700">
+            <p id="detail-placeTime" class="text-xs text-slate-700 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- 学校への連絡 & 詳細、枠線を濃いグレーに変更 -->
+        <div class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-3">
+          <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+            学校・園からの報告と指導内容
+          </h3>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="space-y-1.5">
+              <span class="text-[9px] text-slate-505 block">連絡帳・園・学校からの連絡</span>
+              <div class="bg-slate-50 p-2 rounded-xl border border-slate-700 h-10 flex flex-col justify-center">
+                <p id="detail-schoolCallTime" class="text-xs text-slate-700"></p>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <span class="text-[9px] text-slate-555 block">先生の指導・仲裁</span>
+              <div class="bg-slate-50 p-2 rounded-xl border border-slate-700 h-10 flex flex-col justify-center">
+                <span id="detail-teacherAction" class="text-xs text-slate-700"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="detail-teacherDetails-section" class="space-y-1.5">
+            <span class="text-[9px] text-slate-505 block">先生から聞いた詳しい経緯</span>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-700">
+              <p id="detail-teacherDetails" class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 保存された証拠写真(無制限対応)、枠線を濃いグレーに変更 -->
+        <div id="detail-image-section" class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-1.5">
+          <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+            怪我・破損の様子（証拠写真 - タップで拡大 / 印刷時は大きく1カラムで出力）
+          </h3>
+          <div id="detail-attached-images-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3 print:grid-cols-1 print:gap-6">
+            <!-- JSで複数枚レンダリング -->
+          </div>
+        </div>
+
+        <!-- 病院受診、枠線を濃いグレーに変更 -->
+        <div class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-3">
+          <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+            医療機関の受診結果
+          </h3>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="space-y-1.5">
+              <span class="text-[9px] text-slate-505 block">病院受診</span>
+              <div class="bg-slate-50 p-2 rounded-xl border border-slate-700 h-10 flex flex-col justify-center">
+                <span id="detail-hospitalVisit" class="text-xs text-slate-700"></span>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <span class="text-[9px] text-slate-505 block">診断書の有無</span>
+              <div class="bg-slate-50 p-2 rounded-xl border border-slate-700 h-10 flex flex-col justify-center">
+                <span id="detail-medicalCertificate" class="text-xs text-slate-700"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="detail-hospitalDetails-section" class="space-y-1.5">
+            <span class="text-[9px] text-slate-555 block">怪我・傷病および受診先の詳細</span>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-700">
+              <p id="detail-hospitalDetails" class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 外部相談状況、枠線を濃いグレーに変更 -->
+        <div id="detail-consultation-section" class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-1.5">
+          <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+            外部関係機関への相談状況
+          </h3>
+          <div id="detail-consultation-badges" class="flex flex-wrap gap-2 pt-1">
+            <!-- Badges -->
+          </div>
+          <div id="detail-consultationDetails-box" class="bg-slate-50 p-3 rounded-xl border-slate-700 mt-2">
+            <p id="detail-consultationDetails" class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- タイムライン、枠線を濃いグレーに変更 -->
+        <div class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-3">
+          <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+            詳細な時系列タイムライン
+          </h3>
+
+          <div id="detail-timeline" class="space-y-3 relative">
+            <!-- Dynamic items -->
+          </div>
+        </div>
+
+        <!-- 交渉メモ、枠線を濃いグレーに変更 -->
+        <div id="detail-memo-section" class="bg-white border-2 border-slate-700 p-4 rounded-2xl space-y-1.5">
+          <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
+            <h3 class="text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-1.5 h-3 bg-sky-500 rounded-full"></span>
+              相手の対応、やり取りのメモ
+            </h3>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-700">
+            <p id="detail-memo" class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- モバイル印刷説明、枠線を濃いグレーに変更 -->
+      <div class="bg-slate-100/70 p-3 rounded-2xl flex items-start gap-2.5 no-print border border-slate-700">
+        <i data-lucide="info" class="w-5.5 h-5.5 text-slate-500 shrink-0 mt-0.5"></i>
+        <div class="space-y-0.5">
+          <h4 class="text-[10px] text-slate-900">PDFを直接保存できます</h4>
+          <p class="text-[9px] text-slate-600 leading-relaxed">
+            上部の「PDF保存」ボタンを押すと、この概要をPDFとして端末に保存します。外部サーバーを介さず、お使いのスマートフォンに安全にダウンロードされます。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================= -->
+    <!-- TAB 5: INFO (HELP)                      -->
+    <!-- ======================================= -->
+    <!-- 枠線を濃いグレーに変更 -->
+    <div id="tab-info" class="tab-content bg-white border border-slate-700 rounded-3xl p-5 shadow-sm space-y-5 animate-fadeIn hidden">
+      <!-- 枠線を濃いグレーに変更 -->
+      <div class="text-center space-y-1.5 pb-4 border-b border-slate-700">
+        <!-- 枠線を濃いグレーに変更 -->
+        <div class="bg-sky-50 border border-slate-700 text-slate-900 p-2 rounded-2xl w-10 h-10 flex items-center justify-center mx-auto text-base">🧸</div>
+        <h2 class="text-xs text-slate-800">子どものもめごと冷静記録ツール「momememoKids」</h2>
+        <p class="text-[9px] text-slate-505">親御さんの気持ちに寄り添い、事実整理をサポートします。</p>
+      </div>
+
+      <div class="space-y-3">
+        <h3 class="text-xs text-slate-800 flex items-center gap-1.5">
+          <i data-lucide="check-circle-2" class="text-sky-500 w-4 h-4"></i>
+          客観的記録が重要とされる理由
+        </h3>
+        <p class="text-[10px] text-slate-700 leading-relaxed">
+          子どもが園や学校で小競り合いなどに直面した際、我が子を心配するがゆえに親御さんは強い感情（焦り・怒り）を抱きがちです。
+        </p>
+        <p class="text-[10px] text-slate-700 leading-relaxed">
+          しかし、事実が曖昧なまま感情的に相手や学校側と接してしまうと、スムーズな解決が困難になるケースが多々あります。
+        </p>
+        <p class="text-[10px] text-slate-700 leading-relaxed">
+          「何時何分に何が起こり、どのように対処されたか」を時間ごとに整理しておくことが、のちの相談時に確かな裏付けとして役立ちます。
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <h3 class="text-xs text-slate-800 flex items-center gap-1.5">
+          <i data-lucide="check-circle-2" class="text-sky-500 w-4 h-4"></i>
+          各入力項目の意義と便利機能
+        </h3>
+        
+        <!-- 枠線を濃いグレーに変更 -->
+        <div class="space-y-2.5 text-[10px]">
+          <div class="p-3 bg-slate-50 border border-slate-700 rounded-xl space-y-0.5">
+            <p class="text-slate-800">第一報 of 連絡時間</p>
+            <p class="text-slate-655 leading-relaxed">学校や園がどの時点で状況を把握し、いつ連絡をくれたかは、初動や対応プロセスを明らかにする上で欠かせない要素です。</p>
+          </div>
+          
+          <div class="p-3 bg-slate-50 border border-slate-700 rounded-xl space-y-0.5">
+            <p class="text-slate-800">病院受診と診断書</p>
+            <p class="text-slate-655 leading-relaxed">怪我や体調に異変がある場合は速やかに医療機関を受診し、可能であれば医師 of 診断書を取得することが「事実」の最良の証明手段になります。</p>
+          </div>
+
+          <div class="p-3 bg-slate-50 border border-slate-700 rounded-xl space-y-0.5">
+            <p class="text-slate-800">添付写真機能</p>
+            <p class="text-slate-655 leading-relaxed">怪我の様子や、壊された物などをスマホのカメラで素早く記録。画像はローカルに安全に圧縮・保存されます。</p>
+          </div>
+
+          <!-- 自動時系列転記の分かりやすい解説カードを追加、枠線を濃いグレーに変更 -->
+          <div class="p-3 bg-sky-50 border border-slate-700 rounded-xl space-y-1">
+            <p class="text-sky-955 flex items-center gap-1">
+              <i data-lucide="zap" class="w-4 h-4 text-sky-600"></i>
+              自動時系列タイムライン転記システム
+            </p>
+            <p class="text-slate-700 leading-relaxed text-[9px]">
+              自由記入欄に「<strong>10:25</strong>」や「<strong>15：30</strong>」のように、半角・全角を問わず時間（タイムスタンプ）を入力して書き始めると、システムが自動的に検知して動作します。<br>
+              検知した時間の後ろから、<strong class="text-sky-955 font-semibold">次の「改行（行替え）」があるまでの文章すべて</strong>を1つのイベントとして自動抽出し、時系列タイムラインに即座に登録します。文中に「。」（句点）が含まれていても、改行するまでは一続きの内容として丸ごと転記されるため、一連の詳細な状況を漏れなく確実に時系列化できます。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 枠線を濃いグレーに変更 -->
+      <div class="bg-sky-50 border border-slate-700 p-3 rounded-xl text-[9px] text-slate-700 leading-relaxed flex items-start gap-1.5">
+        <span>🔒</span>
+        <p><strong>個人プライバシーへの配慮: </strong>入力されたすべてのデータ、写真は外部のサーバーへ送信されることは一切ありません。あなたのスマホのストレージ内（localStorage）で安全に保持されます。</p>
+      </div>
+
+      <!-- 枠線を濃いグレーに変更 -->
+      <div class="text-center pt-2">
+        <button onclick="navigate('form')" class="w-full bg-slate-900 active:scale-95 text-white text-xs py-3 rounded-xl shadow-xs border border-slate-700">新規追加に戻る</button>
+      </div>
+    </div>
+
+    <!-- ======================================= -->
+    <!-- TAB 6: COOLDOWN (DEEP BREATHING)         -->
+    <!-- ======================================= -->
+    <!-- 枠線を濃いグレーに変更 -->
+    <div id="tab-cooldown" class="tab-content bg-white border border-slate-700 rounded-3xl p-5 shadow-sm space-y-6 animate-fadeIn hidden">
+      <!-- 枠線を濃いグレーに変更 -->
+      <div class="text-center space-y-1 border-b border-slate-700 pb-3">
+        <h2 class="text-sm text-slate-800 flex items-center justify-center gap-1.5">
+          <i data-lucide="wind" class="w-5 h-5 text-sky-500"></i>
+          こころのクールダウン
+        </h2>
+        <p class="text-[9px] text-slate-555">感情が込み上げたとき、まず深く息を吐き出して冷静さを取り戻しましょう</p>
+      </div>
+
+      <!-- 呼吸ガイドビジュアル (蛍光黄色基調、枠線を濃いグレーに変更) -->
+      <div class="flex flex-col items-center justify-center py-6 relative">
+        <div id="breath-circle" class="w-32 h-32 rounded-full flex flex-col items-center justify-center animate-breath text-slate-900 transition-all duration-1000 shadow-inner border border-slate-700">
+          <span id="breath-state" class="text-xs tracking-widest text-slate-900">息を吸う</span>
+        </div>
+        <p id="breath-instruction" class="text-[10px] text-slate-650 mt-6 text-center leading-relaxed max-w-[250px]">
+          サークルの拡大と縮小に合わせて <strong class="text-sky-600">吸う・止める・吐く</strong> を繰り返します
+        </p>
+      </div>
+
+      <!-- 冷静になるための親御さんへのメッセージ、枠線を濃いグレーに変更 -->
+      <div class="bg-sky-50 border border-slate-700 p-3.5 rounded-2xl space-y-1.5 text-[10px]">
+        <h4 class="text-sky-955 flex items-center gap-1">
+          <i data-lucide="lightbulb" class="w-4 h-4 text-sky-550"></i>
+          冷静に事実を記録するための手引
+        </h4>
+        <ul class="list-disc pl-4 space-y-1.5 text-slate-700 leading-relaxed">
+          <li><strong>「非難する」のではなく「記録する」: </strong>まずは誰を責めることもせず、客観的な出来事のみを羅列することに集中します。</li>
+          <li><strong>子どもの感情にも共感する: </strong>事実確認が終わったら「嫌だったね」「痛かったね」と子どもの気持ちをしっかり言葉にして寄り添います。</li>
+          <li><strong>「これからどうするか」の対話の準備: </strong>相手を糾弾して終わりにするのではない、明日から安心して学べる環境づくりをテーマに据えます。</li>
+        </ul>
+      </div>
+
+      <!-- 枠線を濃いグレーに変更 -->
+      <div class="pt-2 flex gap-2.5">
+        <button onclick="navigate('list')" class="w-1/2 bg-white border-2 border-slate-700 text-slate-700 text-xs py-2.5 rounded-xl text-center active:scale-95 transition-all h-11 flex items-center justify-center">
+          履歴一覧に戻る
+        </button>
+        <button onclick="handleNewForm()" class="w-1/2 bg-sky-500 text-white text-xs py-2.5 rounded-xl text-center active:scale-95 transition-all h-11 flex items-center justify-center gap-1 shadow-sm border border-slate-700">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          落ち着いたので記録
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ======================================= -->
+  <!-- FLOATING APP BOTTOM BAR -->
+  <!-- ======================================= -->
+  <!-- ボトムバー：背景を明るい水色（bg-sky-100）へ統一、枠線を濃いグレーに変更 -->
+  <div class="fixed bottom-0 left-0 right-0 bg-sky-100 border-t border-slate-700 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-40 pb-safe no-print">
+    <div class="max-w-md mx-auto flex justify-around items-center h-16 px-2 relative">
+      
+      <!-- 一覧 (左側に配置) -->
+      <button onclick="navigate('list')" id="nav-list" class="flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all text-slate-500 active:scale-90 focus:outline-none">
+        <div class="p-1.5 rounded-xl text-slate-500">
+          <i data-lucide="book-open" class="w-5 h-5 stroke-[2]"></i>
+        </div>
+        <span class="text-[8px] mt-1 text-slate-500 text-xs">一覧</span>
+      </button>
+
+      <!-- 新規追加フォーム (中央配置) -->
+      <button onclick="handleNewForm()" id="nav-form" class="flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all text-slate-500 active:scale-90 focus:outline-none">
+        <div class="p-1.5 rounded-xl text-slate-500">
+          <i data-lucide="plus-circle" class="w-5 h-5 stroke-[2]"></i>
+        </div>
+        <span class="text-[8px] mt-1 text-slate-500 text-xs">新規追加</span>
+      </button>
+
+      <!-- 時系列タイムライン (右側に配置) -->
+      <button onclick="navigate('timeline_view')" id="nav-timeline_view" class="flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all text-slate-500 active:scale-90 focus:outline-none">
+        <div class="p-1.5 rounded-xl text-slate-500">
+          <i data-lucide="clock" class="w-5 h-5 stroke-[2]"></i>
+        </div>
+        <span class="text-[8px] mt-1 text-slate-500 text-xs">時系列</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ======================================= -->
+  <!-- PHOTO ZOOM MODAL (CLICK TO MAGNIFY)     -->
+  <!-- ======================================= -->
+  <!-- 画像、閉じるボタンの枠線を濃いグレーに変更 -->
+  <div id="image-zoom-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 no-print" onclick="closeImageZoom()">
+    <img id="zoomed-image" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-transform duration-300 border border-slate-700">
+    <button class="absolute top-4 right-4 text-white bg-black/50 p-2.5 rounded-full hover:bg-black/80 transition-all border border-slate-700">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+  </div>
+
+  <!-- ======================================= -->
+  <!-- PREMIUM SUBSCRIPTION MODAL              -->
+  <!-- ======================================= -->
+  <!-- 枠線を濃いグレーに変更 -->
+  <div id="premium-modal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm flex items-end justify-center z-50 p-4 hidden no-print">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-[0_8px_30px_rgb(0,0,0,0.15)] border-2 border-slate-700 transform transition-transform translate-y-0 animate-slideUp">
+      <div class="text-center space-y-1.5">
+        <div class="bg-amber-100/80 border border-slate-700 text-amber-850 p-2 rounded-2xl w-12 h-12 flex items-center justify-center mx-auto text-xl">
+          👑
+        </div>
+        <h3 class="text-sm text-slate-900 font-semibold">プレミアムプラン</h3>
+        <p class="text-[10px] text-slate-505">さらに高度な機能でトラブル解決をサポート</p>
+      </div>
+
+      <div class="bg-slate-50 p-4 border-2 border-slate-700 rounded-2xl space-y-2.5">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+          <span class="text-xs text-slate-900">すべてのプロ仕様機能が解放</span>
+          <span class="text-xs text-sky-600 bg-sky-50 px-2 py-0.5 rounded-lg border border-slate-700">月額 200円</span>
+        </div>
+        <ul class="text-[10px] space-y-1.5 text-slate-900">
+          <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-500 shrink-0"></i> 📄 「学校用」「相談用」など目的に合わせた特化PDFの出力</li>
+          <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-500 shrink-0"></i> 🤖 AI客観リライト（報告文の自動校正・感情整理）</li>
+          <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-500 shrink-0"></i> ☁️ 安全な自動クラウド同期・データバックアップ</li>
+        </ul>
+      </div>
+
+      <p class="text-[8px] text-slate-900 text-center">
+        ※現在デモ画面です。下の「模擬決済する」を押すことで、今すぐ無料でプレミアム機能をお試しいただけます。
+      </p>
+
+      <div class="flex gap-2.5 pt-1.5">
+        <button onclick="closePremiumModal()" class="w-1/3 py-2.5 bg-white border-2 border-slate-700 text-slate-900 text-[10px] rounded-xl active:scale-95 transition-all h-11 flex items-center justify-center">
+          閉じる
+        </button>
+        <button onclick="subscribeToPremiumDemo()" class="w-2/3 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-[10px] rounded-xl active:scale-95 transition-all h-11 flex items-center justify-center shadow-sm border border-slate-700">
+          👑 200円/月 で模擬決済する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================= -->
+  <!-- CUSTOM MODAL CONFIRM DIALOG             -->
+  <!-- ======================================= -->
+  <!-- 枠線を濃いグレーに変更 -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end justify-center z-50 p-4 hidden no-print" onclick="closeConfirmModal()">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-2 border-slate-700 transform transition-transform translate-y-0 animate-slideUp" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-2.5 text-rose-500 border-b border-slate-700 pb-2.5">
+        <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 stroke-[2]"></i>
+        <h3 id="confirm-title" class="text-sm text-slate-900 font-semibold">確認</h3>
+      </div>
+      <p id="confirm-message" class="text-xs text-slate-600 leading-relaxed">内容を確認してください。</p>
+      <div class="flex gap-2.5 pt-1.5">
+        <button onclick="closeConfirmModal()" class="w-1/2 py-2.5 bg-white border-2 border-slate-700 text-slate-600 text-xs rounded-xl active:scale-95 transition-all h-11 flex items-center justify-center">
+          キャンセル
+        </button>
+        <button id="confirm-action-btn" class="w-1/2 py-2.5 bg-rose-500 text-white text-xs rounded-xl active:scale-95 transition-all h-11 flex items-center justify-center shadow-sm border border-slate-700">
+          削除する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================= -->
+  <!-- MOBILE TOAST NOTIFICATION               -->
+  <!-- ======================================= -->
+  <!-- 枠線を濃いグレーに変更 -->
+  <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl border-2 border-slate-700 bg-white text-slate-900 shadow-lg hidden items-center gap-2.5 max-w-[320px] w-max no-print">
+    <span id="toast-icon"></span>
+    <span id="toast-message" class="text-[10px] tracking-wide whitespace-nowrap">処理を完了しました</span>
+  </div>
+
+  <!-- ======================================= -->
+  <!-- APPLICATION JAVASCRIPT                  -->
+  <!-- ======================================= -->
+  <script>
+    // Initial static logs database
+    const initialLogs = [
+      {
+        id: "log-1",
+        date: "2026-05-18",
+        role: "victim",
+        opponentName: "Bくん",
+        grade: "小学3年生",
+        placeTime: "中休み（10:25頃）、校庭のサッカーゴール裏。Bくんにわざと足を出されて転び右足を強打した、と本人から泣きながら教えてくれた。",
+        schoolCallTime: "16:15頃、電話あり",
+        teacherAction: "あり",
+        teacherDetails: "担任の佐藤先生からお電話。もめごとの経緯の説明と、双方に怪我がないか確認。お互い謝罪は済んだとのことだが、念のため家での様子を見てほしいとのこと。",
+        hospitalVisit: "mine",
+        hospitalDetails: "夕方、右足の痛みを訴えたため「さくら整形外科」を受診。軽い打撲と診断。",
+        medicalCertificate: "なし",
+        consultationChild: false,
+        consultationPolice: false,
+        consultationDetails: "",
+        resolved: false,
+        isMonster: false,
+        memo: "相手の親御さんからはまだ連絡なし。本人は少し元気が戻ったが、明日の朝登校する時の様子に注意する。",
+        images: [], 
+        timeline: [
+          { id: "t1-1", time: "10:25", content: "サッカーのルールを巡って口論になる。ボールの取り合いに。" },
+          { id: "t1-2", time: "10:28", content: "相手に背中を押され、サッカーゴールの支柱に右足をぶつける。" },
+          { id: "t1-3", time: "10:35", content: "チャイムが鳴り教室に戻る。保健室には行かず、通常通り授業を受ける。" },
+          { id: "t1-4", time: "15:00", content: "下校時、右足を引きずっているのを近所のママが見かけて心配してくれた。" },
+          { id: "t1-5", time: "16:15", content: "担任の佐藤先生から携帯に電話あり。状況の共有を受ける。" },
+          { id: "t1-6", time: "17:30", content: "「さくら整形外科」を受診。湿布を処方される。" }
+        ]
+      },
+      {
+        id: "log-2",
+        date: "2026-06-02",
+        role: "unknown", 
+        opponentName: "Cくん",
+        grade: "小学3年生",
+        placeTime: "掃除の時間、3年1組の教室後ろ。ほうきを奪い合って小競り合いが起こったとのこと。",
+        schoolCallTime: "15:30頃、電話あり",
+        teacherAction: "あり",
+        teacherDetails: "学年主任の鈴木先生が対応。掃除道具（ほうき）の取り合いから小競り合いに。お互いに手が出てしまったため、厳重注意をしたとのこと。",
+        hospitalVisit: "none", 
+        hospitalDetails: "手の甲に軽い赤みがあったが、冷やしたら引いたため病院は受診せず経過観察。",
+        medicalCertificate: "なし",
+        consultationChild: false,
+        consultationPolice: false,
+        consultationDetails: "",
+        resolved: true,
+        isMonster: true,
+        memo: "翌日、相手の親御さんに報告したところ、事実確認を拒否され話し合いは平行線のまま終了。",
+        images: [],
+        timeline: [
+          { id: "t2-1", time: "13:45", content: "掃除の時間、どちらがほうきを使うかで言い合いが始まる。" },
+          { id: "t2-2", time: "13:50", content: "相手がほうきを強く引っ張った際、息子の手の甲に当たってしまう。カッとなって息子も相手を押した。" },
+          { id: "t2-3", time: "14:00", content: "掃除場所の担当の鈴木先生が仲裁。双方に事情を聴取。" },
+          { id: "t2-4", time: "15:30", content: "担任 of 佐藤先生よりお電話。双方に非があること、その場で指導したことを報告される。" }
+        ]
+      }
+    ];
+
+    let logs = [];
+
+    // Application State
+    let state = {
+      activeTab: 'form',
+      selectedLog: null,
+      formStep: 0,
+      activeTimelineLogId: '',
+      breathCycleTimer: null,
+      isSubscribed: false, 
+      formState: {
+        id: '',
+        date: '',
+        role: 'victim',
+        opponentName: '',
+        grade: '小学3年生',
+        placeTime: '',
+        schoolCallTime: '',
+        teacherAction: 'なし',
+        teacherDetails: '',
+        hospitalVisit: 'none',
+        hospitalDetails: '',
+        medicalCertificate: 'なし',
+        consultationChild: false,
+        consultationPolice: false,
+        consultationDetails: '',
+        resolved: false,
+        isMonster: false,
+        memo: '',
+        images: [], 
+        timeline: []
+      }
+    };
+
+    function safeCreateIcons() {
+      try {
+        if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
+          lucide.createIcons();
+        }
+      } catch (e) {
+        console.error("Lucide icon creation failed silently:", e);
+      }
+    }
+
+    // ロード完了時にデータを初期化
+    window.onload = function() {
+      try {
+        initApp();
+      } catch(e) {
+        console.error("Failed to initialize app state:", e);
+      }
+      safeCreateIcons();
+    };
+
+    function initApp() {
+      const saved = localStorage.getItem('momememo_logs');
+      if (saved) {
+        try { 
+          logs = JSON.parse(saved); 
+          logs = logs.map(log => {
+            if (!log.images) {
+              log.images = log.image ? [log.image] : [];
+            }
+            if (log.isMonster === undefined) {
+              log.isMonster = false;
+            }
+            if (log.timeline) {
+              log.timeline.sort((a, b) => a.time.localeCompare(b.time));
+            }
+            return log;
+          });
+        } catch(e) {
+          console.error("Failed to parse saved logs, using default state instead.", e);
+        }
+      }
+      
+      const savedSub = localStorage.getItem('momememo_subscribed');
+      if (savedSub === 'true') {
+        state.isSubscribed = true;
+      }
+
+      if (!logs || logs.length === 0) {
+        logs = [...initialLogs];
+      }
+      if (logs.length > 0) {
+        state.activeTimelineLogId = logs[0].id;
+      }
+      
+      handleNewForm();
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('momememo_logs', JSON.stringify(logs));
+      } catch(e) {
+        console.error("Failed to write to localStorage:", e);
+      }
+    }
+
+    // タブナビゲーション
+    function navigate(tabName) {
+      if (state.breathCycleTimer) {
+        clearInterval(state.breathCycleTimer);
+        state.breathCycleTimer = null;
+      }
+
+      state.activeTab = tabName;
+      
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+      });
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) {
+        targetTab.classList.remove('hidden');
+      }
+
+      document.querySelectorAll('[id^="nav-"]').forEach(nav => {
+        const iconDiv = nav.querySelector('div');
+        if (iconDiv) {
+          iconDiv.className = "p-1.5 rounded-xl text-slate-500";
+        }
+        const span = nav.querySelector('span');
+        if (span) span.className = "text-[8px] mt-1 text-slate-500 text-xs";
+      });
+      
+      const currentNav = document.getElementById(`nav-${tabName}`);
+      if (currentNav) {
+        const iconDiv = currentNav.querySelector('div');
+        const span = currentNav.querySelector('span');
+        
+        // 押下時：題字の横のイラストマークと同じ「蛍光黄色」で統一、枠線を濃いグレーに
+        if (iconDiv) {
+          iconDiv.className = "p-1.5 rounded-xl bg-[#eeff00] text-slate-900 border border-slate-700 shadow-sm scale-105 transition-all";
+        }
+        if (span) {
+          span.className = "text-[8px] mt-1 text-slate-900 text-xs font-semibold";
+        }
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderApp();
+    }
+
+    function renderApp() {
+      if (state.activeTab === 'list') {
+        renderList();
+      } else if (state.activeTab === 'form') {
+        renderFormStep();
+      } else if (state.activeTab === 'detail') {
+        renderDetail();
+      } else if (state.activeTab === 'timeline_view') {
+        renderTimelineTab();
+      } else if (state.activeTab === 'cooldown') {
+        startCooldownTimer();
+      }
+      safeCreateIcons();
+    }
+
+    // =======================================
+    // TAB 1: LIST VIEW RENDERER
+    // =======================================
+    function handleFilterChange() {
+      renderList();
+    }
+
+    function renderList() {
+      const sVal = document.getElementById('search-input').value.toLowerCase();
+
+      const filtered = logs.filter(log => {
+        const matchesSearch = 
+          log.opponentName.toLowerCase().includes(sVal) ||
+          log.placeTime.toLowerCase().includes(sVal) ||
+          (log.memo && log.memo.toLowerCase().includes(sVal)) ||
+          (log.teacherDetails && log.teacherDetails.toLowerCase().includes(sVal));
+        
+        return matchesSearch;
+      });
+
+      const filteredCountEl = document.getElementById('filtered-count');
+      if (filteredCountEl) {
+        filteredCountEl.innerText = filtered.length;
+      }
+
+      const container = document.getElementById('log-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-[#F4EFE6] border-2 border-slate-700 p-8 rounded-3xl text-center space-y-2 shadow-sm animate-fadeIn">
+            <div class="p-2.5 bg-white border-2 border-slate-700 rounded-full w-10 h-10 flex items-center justify-center mx-auto text-slate-900 shadow-xs">
+              <i data-lucide="search" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="text-slate-900 text-sm">見つかりませんでした</p>
+              <p class="text-slate-505 text-xs mt-0.5">検索ワードを切り替えてみてください。</p>
+            </div>
+          </div>`;
+        safeCreateIcons();
+        return;
+      }
+
+      filtered.forEach((log) => {
+        const monsterBadgeHtml = log.isMonster 
+          ? `<span class="inline-flex items-center justify-center bg-rose-50 text-rose-600 border border-slate-700 rounded-full px-2 py-0.5 text-base" title="モンスター対応">💩</span>` 
+          : '';
+
+        const resolvedBadgeHtml = log.resolved
+          ? `<span class="text-[10px] bg-emerald-100 text-emerald-900 border-2 border-slate-700 px-2 py-0.5 rounded-lg flex items-center gap-0.5">✓ 解決済</span>`
+          : '';
+
+        const card = document.createElement('div');
+        card.className = "bg-[#F4EFE6] border-2 border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 hover:border-slate-500 transition-all";
+        
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div class="space-y-2 flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs text-slate-900 bg-white px-2 py-1 rounded-lg border border-slate-700">
+                  ${log.date}
+                </span>
+                ${resolvedBadgeHtml}
+              </div>
+              
+              <div class="flex justify-between items-center gap-2 mt-1">
+                <h3 class="text-slate-900 text-lg md:text-xl flex items-center gap-1.5 min-w-0">
+                  相手: ${log.opponentName}
+                  ${monsterBadgeHtml}
+                </h3>
+              </div>
+
+              <div class="bg-white p-3 rounded-xl border-2 border-slate-700 mt-2">
+                <span class="block text-xs text-slate-500 mb-1 uppercase tracking-wider">もめごとの概要</span>
+                <p class="text-sm md:text-base text-slate-900 leading-relaxed truncate-2-lines">${log.placeTime || '発生場所や概要の記録はまだありません。'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-1.5 border-t border-slate-700 pt-3 mt-1">
+            <button onclick="viewLogDetails('${log.id}')" class="px-3 py-2 bg-white border-2 border-slate-700 text-slate-900 text-xs md:text-sm rounded-lg flex items-center gap-1 active:scale-95 transition-transform h-9" title="概要書を見る">
+              <i data-lucide="book-open" class="w-4 h-4"></i> 概要
+            </button>
+            <button onclick="handleGoToTimelineTab('${log.id}')" class="px-3 py-2 bg-white border-2 border-slate-700 text-slate-900 text-xs md:text-sm rounded-lg flex items-center gap-1 active:scale-95 transition-transform h-9" title="時系列の詳細を追加・整理する">
+              <i data-lucide="clock" class="w-4 h-4"></i> 時系列編集
+            </button>
+            <button onclick="startEdit('${log.id}')" class="px-3 py-2 bg-white border-2 border-slate-700 text-slate-900 text-xs md:text-sm rounded-lg flex items-center gap-1 active:scale-95 transition-transform h-9" title="記録内容を編集する">
+              <i data-lucide="edit-3" class="w-4 h-4"></i> 編集
+            </button>
+            <button onclick="triggerDelete('${log.id}')" class="p-2 rounded-lg active:scale-90 transition-transform text-rose-600 hover:bg-rose-50 animate-fadeIn ml-auto" aria-label="削除" title="このもめごとの記録を削除する">
+              <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      setTimeout(() => {
+        safeCreateIcons();
+      }, 50);
+    }
+
+    // =======================================
+    // TAB 2: FORM CONTROLLER & STEP RENDERER
+    // =======================================
+    function handleNewForm() {
+      const today = new Date().toISOString().split('T')[0];
+      
+      state.formStep = 0;
+      state.formState = {
+        id: '',
+        date: today,
+        role: 'victim',
+        opponentName: '',
+        grade: '小学3年生',
+        placeTime: '',
+        schoolCallTime: '',
+        teacherAction: 'なし',
+        teacherDetails: '',
+        hospitalVisit: 'none',
+        hospitalDetails: '',
+        medicalCertificate: 'なし',
+        consultationChild: false,
+        consultationPolice: false,
+        consultationDetails: '',
+        resolved: false,
+        isMonster: false,
+        memo: '',
+        images: [], 
+        timeline: []
+      };
+
+      const elId = document.getElementById('form-id'); if (elId) elId.value = '';
+      const elDate = document.getElementById('form-date'); if (elDate) elDate.value = today;
+      const elOpp = document.getElementById('form-opponentName'); if (elOpp) elOpp.value = '';
+      const elGrade = document.getElementById('form-grade'); if (elGrade) elGrade.value = '小学3年生';
+      const elPT = document.getElementById('form-placeTime'); if (elPT) elPT.value = '';
+      const elSCT = document.getElementById('form-schoolCallTime'); if (elSCT) elSCT.value = '';
+      const elTD = document.getElementById('form-teacherDetails'); if (elTD) elTD.value = '';
+      const elHD = document.getElementById('form-hospitalDetails'); if (elHD) elHD.value = '';
+      const elCC = document.getElementById('form-consultationChild'); if (elCC) elCC.checked = false;
+      const elCP = document.getElementById('form-consultationPolice'); if (elCP) elCP.checked = false;
+      const elCD = document.getElementById('form-consultationDetails'); if (elCD) elCD.value = '';
+      const elRes = document.getElementById('form-resolved'); if (elRes) elRes.checked = false;
+      const elMon = document.getElementById('form-isMonster'); if (elMon) elMon.checked = false;
+      const elMemo = document.getElementById('form-memo'); if (elMemo) elMemo.value = '';
+      
+      setRole('victim');
+      updateTeacherActionUI();
+      updateHospitalVisitUI();
+      updateCertificateUI();
+      renderImageUploadGrid();
+
+      const monsterWrapper = document.getElementById('monster-checkbox-wrapper');
+      if (monsterWrapper) monsterWrapper.classList.remove('hidden');
+
+      const elTitle = document.getElementById('form-title-text');
+      if (elTitle) elTitle.innerText = "新規追加";
+
+      const elErr = document.getElementById('form-error-banner');
+      if (elErr) elErr.classList.add('hidden');
+
+      document.querySelectorAll('[id^="nav-"]').forEach(nav => {
+        if (nav.id === 'nav-form') return; 
+        const iconDiv = nav.querySelector('div');
+        if (iconDiv) {
+          iconDiv.className = "p-1.5 rounded-xl text-slate-500 transition-all";
+        }
+        const span = nav.querySelector('span');
+        if (span) span.className = "text-[8px] mt-1 text-slate-505 text-xs";
+      });
+
+      navigate('form');
+    }
+
+    function setFormStep(step) {
+      state.formStep = step;
+      renderFormStep();
+    }
+
+    function nextFormStep(nextStep) {
+      if (state.formStep === 0) {
+        const dateVal = document.getElementById('form-date').value;
+        const opponentVal = document.getElementById('form-opponentName').value;
+        if (!dateVal || !opponentVal) {
+          const errText = document.getElementById('form-error-text');
+          if (errText) errText.innerText = "日付と相手の名前は必須項目です。";
+          const errBanner = document.getElementById('form-error-banner');
+          if (errBanner) errBanner.classList.remove('hidden');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      }
+      const errBanner = document.getElementById('form-error-banner');
+      if (errBanner) errBanner.classList.add('hidden');
+      setFormStep(nextStep);
+    }
+
+    // =======================================
+    // IMAGES HANDLERS
+    // =======================================
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const max_size = 640; 
+
+          if (width > height) {
+            if (width > max_size) {
+              height *= max_size / width;
+              width = max_size;
+            }
+          } else {
+            if (height > max_size) {
+              width *= max_size / height;
+              height = max_size;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+
+          if (!state.formState.images) {
+            state.formState.images = [];
+          }
+          state.formState.images.push(compressedBase64);
+          
+          showToast(`写真を追加しました (${state.formState.images.length}枚目)`);
+          renderImageUploadGrid();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = ''; 
+    }
+
+    function removeImage(index) {
+      if (state.formState.images && state.formState.images[index]) {
+        state.formState.images.splice(index, 1);
+        showToast("写真を削除しました");
+        renderImageUploadGrid();
+      }
+    }
+
+    function renderImageUploadGrid() {
+      const grid = document.getElementById('image-grid-container');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const images = state.formState.images || [];
+      const quotaBadge = document.getElementById('photo-quota-badge');
+      
+      if (quotaBadge) {
+        quotaBadge.innerHTML = `<span class="text-slate-700">登録済み: ${images.length}枚 (制限なし)</span>`;
+        quotaBadge.className = "text-[9px] px-2 py-0.5 rounded bg-[#FAF7F0] text-slate-700 border border-slate-700";
+      }
+
+      images.forEach((imgBase64, idx) => {
+        const item = document.createElement('div');
+        item.className = "relative aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center group cursor-pointer";
+        item.innerHTML = `
+          <img src="${imgBase64}" class="w-full h-full object-cover" onclick="zoomImage('${imgBase64}')" title="拡大する">
+          <button type="button" onclick="event.stopPropagation(); removeImage(${idx})" class="absolute top-1 right-1 bg-rose-500 text-white rounded-full p-1 shadow-md active:scale-90 transition-transform border border-slate-700" title="削除">
+            <i data-lucide="x" class="w-3 h-3 stroke-[3]"></i>
+          </button>
+          <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[8px] px-1 py-0.2 rounded font-mono">
+            ${idx + 1}
+          </span>
+        `;
+        grid.appendChild(item);
+      });
+
+      if (images.length === 0) {
+        const item = document.createElement('div');
+        item.className = "col-span-3 bg-slate-50/50 rounded-xl border border-slate-700 border-dashed flex flex-col items-center justify-center text-slate-400 py-4 px-2 text-center";
+        item.innerHTML = `
+          <p class="text-[10px] text-slate-400">追加された写真はありません。</p>
+        `;
+        grid.appendChild(item);
+      }
+      safeCreateIcons();
+    }
+
+    function openPremiumModal() {
+      const pm = document.getElementById('premium-modal');
+      if (pm) pm.classList.remove('hidden');
+    }
+
+    function closePremiumModal() {
+      const pm = document.getElementById('premium-modal');
+      if (pm) pm.classList.add('hidden');
+    }
+
+    function subscribeToPremiumDemo() {
+      state.isSubscribed = true;
+      localStorage.setItem('momememo_subscribed', 'true');
+      closePremiumModal();
+      showToast("👑 プレミアム機能が有効化されました！");
+      renderImageUploadGrid();
+      if (state.activeTab === 'detail') {
+        renderDetail();
+      }
+    }
+
+    // 進捗インジケーター（①→②→③を緑系からすべて水色（sky系）に変更、枠線を濃いグレーに変更）
+    function renderFormStep() {
+      const s0 = document.getElementById('form-step-0-container');
+      const s1 = document.getElementById('form-step-1-container');
+      const s2 = document.getElementById('form-step-2-container');
+      
+      if (s0) s0.classList.add('hidden');
+      if (s1) s1.classList.add('hidden');
+      if (s2) s2.classList.add('hidden');
+
+      const activeContainer = document.getElementById(`form-step-${state.formStep}-container`);
+      if (activeContainer) {
+        activeContainer.classList.remove('hidden');
+      }
+
+      for (let i = 0; i <= 2; i++) {
+        const numCircle = document.getElementById(`step-num-${i}`);
+        const textLabel = document.getElementById(`step-txt-${i}`);
+        
+        if (numCircle && textLabel) {
+          if (i === state.formStep) {
+            numCircle.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-sky-500 text-white shadow-sm border border-slate-700";
+            textLabel.className = "text-[9px] text-slate-900";
+          } else if (i < state.formStep) {
+            numCircle.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs bg-sky-200 border border-slate-700 text-sky-800";
+            textLabel.className = "text-[9px] text-slate-600";
+          } else {
+            numCircle.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs bg-sky-50 border border-slate-700 text-sky-300";
+            textLabel.className = "text-[9px] text-slate-400";
+          }
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // わが子の立場の選択：選択時すべて「水色（bg-sky-500 text-white）」統一、枠線を濃いグレーに変更
+    function setRole(role) {
+      state.formState.role = role;
+      
+      const victimBtn = document.getElementById('role-btn-victim');
+      const perpetratorBtn = document.getElementById('role-btn-perpetrator');
+      const unknownBtn = document.getElementById('role-btn-unknown');
+
+      if (victimBtn && perpetratorBtn && unknownBtn) {
+        victimBtn.className = "py-2 text-xs rounded-lg transition-all text-slate-505 bg-transparent";
+        perpetratorBtn.className = "py-2 text-xs rounded-lg transition-all text-slate-505 bg-transparent";
+        unknownBtn.className = "py-2 text-xs rounded-lg transition-all text-slate-505 bg-transparent";
+
+        if (role === 'victim') {
+          victimBtn.className = "py-2 text-xs rounded-lg transition-all shadow-xs bg-sky-500 text-white border border-slate-700";
+        } else if (role === 'perpetrator') {
+          perpetratorBtn.className = "py-2 text-xs rounded-lg transition-all shadow-xs bg-sky-500 text-white border border-slate-700";
+        } else {
+          unknownBtn.className = "py-2 text-xs rounded-lg transition-all shadow-xs bg-sky-500 text-white border border-slate-700";
+        }
+      }
+    }
+
+    // 学校対応の選択：選択時すべて「水色（bg-sky-500 text-white）」に統一、枠線を濃いグレーに変更
+    function updateTeacherActionUI() {
+      const yesRadio = document.getElementById('form-teacherAction-yes');
+      const yesLabel = document.getElementById('teacher-action-yes-label');
+      const noLabel = document.getElementById('teacher-action-no-label');
+
+      if (yesRadio && yesLabel && noLabel) {
+        if (yesRadio.checked) {
+          state.formState.teacherAction = 'あり';
+          yesLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-sky-500 text-white font-semibold transition-all h-11";
+          noLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white text-slate-500 transition-all h-11";
+        } else {
+          state.formState.teacherAction = 'なし';
+          yesLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white text-slate-500 transition-all h-11";
+          noLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-sky-500 text-white font-semibold transition-all h-11";
+        }
+      }
+    }
+
+    // 病院受診の選択：選択時すべて「水色（bg-sky-500 text-white）」に統一、枠線を濃いグレーに変更
+    function updateHospitalVisitUI() {
+      const radios = document.getElementsByName('hospitalVisit');
+      let val = 'none';
+      radios.forEach(r => {
+        if (r.checked) val = r.value;
+      });
+
+      state.formState.hospitalVisit = val;
+
+      const noneL = document.getElementById('hospital-visit-none-label');
+      const mineL = document.getElementById('hospital-visit-mine-label');
+      const oppL = document.getElementById('hospital-visit-opponent-label');
+      const bothL = document.getElementById('hospital-visit-both-label');
+
+      [noneL, mineL, oppL, bothL].forEach(l => {
+        if (l) l.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 bg-white text-slate-500 rounded-xl cursor-pointer select-none transition-all h-11";
+      });
+
+      if (val === 'none' && noneL) {
+        noneL.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 bg-sky-500 text-white font-semibold rounded-xl cursor-pointer select-none transition-all h-11";
+      } else if (val === 'mine' && mineL) {
+        mineL.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 bg-sky-500 text-white font-semibold rounded-xl cursor-pointer select-none transition-all h-11";
+      } else if (val === 'opponent' && oppL) {
+        oppL.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 bg-sky-500 text-white font-semibold rounded-xl cursor-pointer select-none transition-all h-11";
+      } else if (val === 'both' && bothL) {
+        bothL.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 bg-sky-500 text-white font-semibold rounded-xl cursor-pointer select-none transition-all h-11";
+      }
+    }
+
+    // 医師の診断書の選択：選択時すべて「水色（bg-sky-500 text-white）」に統一、枠線を濃いグレーに変更
+    function updateCertificateUI() {
+      const yesRadio = document.getElementById('form-medicalCertificate-yes');
+      const yesLabel = document.getElementById('certificate-yes-label');
+      const noLabel = document.getElementById('certificate-no-label');
+
+      if (yesRadio && yesLabel && noLabel) {
+        if (yesRadio.checked) {
+          state.formState.medicalCertificate = 'あり';
+          yesLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-sky-500 text-white font-semibold transition-all h-11";
+          noLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white text-slate-500 transition-all h-11";
+        } else {
+          state.formState.medicalCertificate = 'なし';
+          yesLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-white text-slate-500 transition-all h-11";
+          noLabel.className = "flex items-center justify-center p-2.5 border-2 border-slate-700 rounded-xl bg-sky-500 text-white font-semibold transition-all h-11";
+        }
+      }
+    }
+
+    // =======================================
+    // TAB 3: TIMELINE TAB RENDERER
+    // =======================================
+    function renderTimelineTab() {
+      const selector = document.getElementById('timeline-log-selector');
+      if (!selector) return;
+      selector.innerHTML = '';
+      
+      if (logs.length === 0) {
+        selector.innerHTML = `<option value="">選択できる記録がありません</option>`;
+        const summaryBox = document.getElementById('timeline-active-log-summary');
+        if (summaryBox) summaryBox.innerHTML = `<p class="text-slate-400 text-sm">まだデータがありません</p>`;
+        const tabList = document.getElementById('timeline-tab-list');
+        if (tabList) tabList.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">データ未登録</p>`;
+        return;
+      }
+
+      logs.forEach(log => {
+        const option = document.createElement('option');
+        option.value = log.id;
+        option.innerText = `${log.date} - ${log.opponentName}`;
+        if (log.id === state.activeTimelineLogId) {
+          option.selected = true;
+        }
+        selector.appendChild(option);
+      });
+
+      const currentLog = logs.find(l => l.id === state.activeTimelineLogId);
+      const summaryBox = document.getElementById('timeline-active-log-summary');
+      
+      if (currentLog && summaryBox) {
+        summaryBox.innerHTML = `
+          <div>
+            <span class="text-slate-900 block text-sm md:text-base font-semibold">相手: ${currentLog.opponentName}</span>
+            <span class="text-xs text-slate-600 block mt-0.5">
+              ${currentLog.date} 発生
+            </span>
+          </div>
+          <button onclick="viewLogDetails('${currentLog.id}')" class="text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 border-2 border-slate-700 px-3 py-2 rounded-xl shadow-xs active:scale-95 transition-transform">
+            概要を見る
+          </button>
+        `;
+
+        const list = document.getElementById('timeline-tab-list');
+        if (list) {
+          list.innerHTML = '';
+
+          if (!currentLog.timeline || currentLog.timeline.length === 0) {
+            list.className = "py-6 text-center text-slate-500 text-sm flex flex-col items-center gap-1.5";
+            list.innerHTML = `
+              <i data-lucide="clock" class="w-8 h-8 text-sky-400 opacity-60"></i>
+              <span class="text-sm">タイムラインがまだ登録されていません。</span>
+              <p class="text-xs text-slate-600 max-w-[280px]">メモ欄に「10:25」などの時間を入れると自動で時系列へ転記・連携されます。</p>
+            `;
+            safeCreateIcons();
+            return;
+          }
+
+          currentLog.timeline.sort((a, b) => a.time.localeCompare(b.time));
+
+          list.className = "space-y-4 relative before:content-[''] before:absolute before:left-14 before:top-2 before:bottom-2 before:w-[1.5px] before:bg-slate-300";
+          currentLog.timeline.forEach(item => {
+            const row = document.createElement('div');
+            row.className = "flex gap-3 items-start relative animate-fadeIn";
+            row.innerHTML = `
+              <span class="w-12 pt-0.5 text-right text-xs md:text-sm text-sky-600 font-mono shrink-0">${item.time}</span>
+              <!-- 時系列タイムラインの時間の右側にある〇ポチ：水色（bg-sky-500）に変更、枠線を濃いグレーに変更 -->
+              <div class="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0 mt-1.5 relative z-10 shadow-xs ring-4 ring-white"></div>
+              <div class="flex-1 bg-white p-3 rounded-xl border-2 border-slate-700 flex justify-between items-start gap-2 shadow-xs">
+                <span class="text-xs md:text-sm text-slate-900 leading-relaxed">${item.content}</span>
+                <button type="button" onclick="removeTimelineItemFromTab('${item.id}')" class="text-slate-500 hover:text-rose-500 p-0.5 shrink-0 transition-all active:scale-90">
+                  <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i>
+                </button>
+              </div>
+            `;
+            list.appendChild(row);
+          });
+        }
+      }
+      safeCreateIcons();
+    }
+
+    function changeActiveTimelineLog(id) {
+      state.activeTimelineLogId = id;
+      renderTimelineTab();
+    }
+
+    function addTimelineItemInTab() {
+      if (!state.activeTimelineLogId) {
+        showToast("もめごとの記録を選択してください", "error");
+        return;
+      }
+      const timeVal = document.getElementById('timeline-tab-time').value.trim();
+      const contentVal = document.getElementById('timeline-tab-content').value.trim();
+
+      if (!contentVal) {
+        showToast("内容を入力してください", "error");
+        return;
+      }
+
+      let typedTime = timeVal.replace(/：/g, ':');
+      if (typedTime && !typedTime.includes(':') && typedTime.length <= 2 && !isNaN(typedTime)) {
+        typedTime = `${typedTime.padStart(2, '0')}:00`;
+      }
+
+      const newItem = {
+        id: `t-${Date.now()}`,
+        time: typedTime || '時間未指定',
+        content: contentVal
+      };
+
+      logs = logs.map(log => {
+        if (log.id === state.activeTimelineLogId) {
+          const updatedTimeline = [...(log.timeline || []), newItem].sort((a, b) => {
+            return a.time.localeCompare(b.time);
+          });
+          return { ...log, timeline: updatedTimeline };
+        }
+        return log;
+      });
+
+      document.getElementById('timeline-tab-time').value = '';
+      document.getElementById('timeline-tab-content').value = '';
+      
+      saveToLocalStorage();
+      showToast("タイムラインへ追記しました");
+      renderTimelineTab();
+    }
+
+    function removeTimelineItemFromTab(itemId) {
+      if (!state.activeTimelineLogId) return;
+
+      logs = logs.map(log => {
+        if (log.id === state.activeTimelineLogId) {
+          return { ...log, timeline: (log.timeline || []).filter(item => item.id !== itemId) };
+        }
+        return log;
+      });
+
+      saveToLocalStorage();
+      showToast("イベントを削除しました", "success");
+      renderTimelineTab();
+    }
+
+    function handleGoToTimelineTab(logId) {
+      state.activeTimelineLogId = logId;
+      navigate('timeline_view');
+    }
+
+    // =======================================
+    // SMART TIMESTAMP & CONTENT EXTRACTION
+    // =======================================
+    function handleTextareaBlur(textarea, label) {
+      const text = textarea.value;
+      if (!text) return;
+
+      const timeRegex = /\b([0-1]?[0-9]|2[0-3])[:：]([0-5][0-9])\b/g;
+      let match;
+      const matches = [];
+
+      while ((match = timeRegex.exec(text)) !== null) {
+        matches.push({
+          time: `${match[1].padStart(2, '0')}:${match[2]}`,
+          index: match.index,
+          rawLength: match[0].length
+        });
+      }
+
+      if (matches.length === 0) return;
+
+      const existingTimes = (state.formState.timeline || []).map(t => t.time);
+      const newItems = [];
+
+      matches.forEach((m, idx) => {
+        if (existingTimes.includes(m.time)) return;
+
+        const startIdx = m.index + m.rawLength;
+        const nextMatch = matches[idx + 1];
+        const limitIdx = nextMatch ? nextMatch.index : text.length;
+        
+        let chunk = text.substring(startIdx, limitIdx);
+        
+        const newlineIdx = chunk.indexOf('\n');
+        if (newlineIdx !== -1) {
+          chunk = chunk.substring(0, newlineIdx);
+        }
+
+        let contentSnippet = chunk.trim();
+        contentSnippet = contentSnippet.replace(/^[に、,。.\s\-〜〜~＝=：:]+/, '');
+
+        if (contentSnippet.length < 2) {
+          contentSnippet = `${label}に記載の出来事`;
+        }
+
+        if (contentSnippet.length > 80) {
+          contentSnippet = contentSnippet.substring(0, 80) + '...';
+        }
+
+        const newItem = {
+          id: `t-auto-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          time: m.time,
+          content: contentSnippet
+        };
+
+        newItems.push(newItem);
+      });
+
+      if (newItems.length === 0) return;
+
+      if (!state.formState.timeline) {
+        state.formState.timeline = [];
+      }
+      
+      state.formState.timeline.push(...newItems);
+      state.formState.timeline = state.formState.timeline.filter((item, index, self) =>
+        self.findIndex(t => t.time === item.time) === index
+      ).sort((a, b) => a.time.localeCompare(b.time));
+
+      showToast("📝 記入された時間から、時系列へ自動転記しました！");
+    }
+
+    // =======================================
+    // FORM SAVE FUNCTION
+    // =======================================
+    function saveLog() {
+      const dateVal = document.getElementById('form-date').value;
+      const opponentVal = document.getElementById('form-opponentName').value;
+
+      if (!dateVal || !opponentVal) {
+        state.formStep = 0;
+        const errText = document.getElementById('form-error-text');
+        if (errText) errText.innerText = "※日付と相手の名前は必須入力項目です。1ページ目に戻って入力してください。";
+        const errBanner = document.getElementById('form-error-banner');
+        if (errBanner) errBanner.classList.remove('hidden');
+        renderFormStep();
+        return;
+      }
+
+      const idVal = document.getElementById('form-id').value;
+      const gradeVal = document.getElementById('form-grade').value;
+      const placeTimeVal = document.getElementById('form-placeTime').value;
+      const schoolCallTimeVal = document.getElementById('form-schoolCallTime').value;
+      const teacherDetailsVal = document.getElementById('form-teacherDetails').value;
+      const hospitalDetailsVal = document.getElementById('form-hospitalDetails').value;
+      const consultChildVal = document.getElementById('form-consultationChild').checked;
+      const consultPoliceVal = document.getElementById('form-consultationPolice').checked;
+      const consultDetailsVal = document.getElementById('form-consultationDetails').value;
+      const resolvedVal = document.getElementById('form-resolved').checked;
+      const isMonsterVal = document.getElementById('form-isMonster').checked;
+      const memoVal = document.getElementById('form-memo').value;
+
+      const updatedState = {
+        ...state.formState,
+        id: idVal,
+        date: dateVal,
+        opponentName: opponentVal,
+        grade: gradeVal,
+        placeTime: placeTimeVal,
+        schoolCallTime: schoolCallTimeVal,
+        teacherAction: state.formState.teacherAction,
+        teacherDetails: teacherDetailsVal,
+        hospitalVisit: state.formState.hospitalVisit,
+        hospitalDetails: hospitalDetailsVal,
+        medicalCertificate: state.formState.medicalCertificate,
+        consultationChild: consultChildVal,
+        consultationPolice: consultPoliceVal,
+        consultationDetails: consultDetailsVal,
+        resolved: resolvedVal,
+        isMonster: isMonsterVal,
+        memo: memoVal,
+        images: state.formState.images || [] 
+      };
+
+      if (updatedState.id) {
+        const originalLog = logs.find(l => l.id === updatedState.id);
+        const combinedTimeline = [...(originalLog.timeline || []), ...(state.formState.timeline || [])].sort((a, b) => {
+          return a.time.localeCompare(b.time);
+        });
+        
+        const uniqueTimeline = combinedTimeline.filter((item, index, self) =>
+          self.findIndex(t => t.time === item.time && t.content === item.content) === index
+        );
+
+        updatedState.timeline = uniqueTimeline;
+        
+        logs = logs.map(log => log.id === updatedState.id ? updatedState : log);
+        showToast("記録を更新しました");
+      } else {
+        const newId = `log-${Date.now()}`;
+        updatedState.id = newId;
+        updatedState.timeline = state.formState.timeline ? [...state.formState.timeline] : [];
+        logs.unshift(updatedState);
+        state.activeTimelineLogId = newId;
+        
+        const elHiddenId = document.getElementById('form-id');
+        if (elHiddenId) elHiddenId.value = newId;
+        state.formState.id = newId;
+
+        const elTitle = document.getElementById('form-title-text');
+        if (elTitle) elTitle.innerText = "新規追加";
+
+        showToast("新しくもめごとを記録しました");
+      }
+
+      saveToLocalStorage();
+    }
+
+    // =======================================
+    // START EDIT FLOW
+    // =======================================
+    function startEdit(id) {
+      const log = logs.find(l => l.id === id);
+      if (!log) return;
+
+      state.formStep = 0;
+      state.formState = { ...log };
+      if (!state.formState.images) {
+        state.formState.images = log.image ? [log.image] : [];
+      }
+
+      const elId = document.getElementById('form-id'); if (elId) elId.value = log.id;
+      const elDate = document.getElementById('form-date'); if (elDate) elDate.value = log.date;
+      const elOpp = document.getElementById('form-opponentName'); if (elOpp) elOpp.value = log.opponentName;
+      const elGrade = document.getElementById('form-grade'); if (elGrade) elGrade.value = log.grade;
+      const elPT = document.getElementById('form-placeTime'); if (elPT) elPT.value = log.placeTime || '';
+      const elSCT = document.getElementById('form-schoolCallTime'); if (elSCT) elSCT.value = log.schoolCallTime || '';
+      const elTD = document.getElementById('form-teacherDetails'); if (elTD) elTD.value = log.teacherDetails || '';
+      const elHD = document.getElementById('form-hospitalDetails'); if (elHD) elHD.value = log.hospitalDetails || '';
+      const elCC = document.getElementById('form-consultationChild'); if (elCC) elCC.checked = log.consultationChild || false;
+      const elCP = document.getElementById('form-consultationPolice'); if (elCP) elCP.checked = log.consultationPolice || false;
+      const elCD = document.getElementById('form-consultationDetails'); if (elCD) elCD.value = log.consultationDetails || '';
+      const elRes = document.getElementById('form-resolved'); if (elRes) elRes.checked = log.resolved || false;
+      const elMon = document.getElementById('form-isMonster'); if (elMon) elMon.checked = log.isMonster || false;
+      const elMemo = document.getElementById('form-memo'); if (elMemo) elMemo.value = log.memo || '';
+
+      setRole(log.role);
+      
+      const yesRadio = document.getElementById('form-teacherAction-yes');
+      const noRadio = document.getElementById('form-teacherAction-no');
+      if (yesRadio && noRadio) {
+        yesRadio.checked = (log.teacherAction === 'あり');
+        noRadio.checked = (log.teacherAction !== 'あり');
+      }
+      updateTeacherActionUI();
+
+      const hospitalRadios = document.getElementsByName('hospitalVisit');
+      hospitalRadios.forEach(r => {
+        r.checked = (r.value === log.hospitalVisit);
+      });
+      updateHospitalVisitUI();
+
+      const yesCert = document.getElementById('form-medicalCertificate-yes');
+      const noCert = document.getElementById('form-medicalCertificate-no');
+      if (yesCert && noCert) {
+        yesCert.checked = (log.medicalCertificate === 'あり');
+        noCert.checked = (log.medicalCertificate !== 'あり');
+      }
+      updateCertificateUI();
+
+      const monsterWrapper = document.getElementById('monster-checkbox-wrapper');
+      if (monsterWrapper) {
+        monsterWrapper.classList.remove('hidden');
+      }
+      
+      const emojiSpan = document.getElementById('monster-emoji');
+      if (emojiSpan) {
+        emojiSpan.innerText = '💩';
+      }
+
+      renderImageUploadGrid();
+
+      const elTitle = document.getElementById('form-title-text');
+      if (elTitle) elTitle.innerText = "新規追加";
+      
+      const errBanner = document.getElementById('form-error-banner');
+      if (errBanner) errBanner.classList.add('hidden');
+      
+      navigate('form');
+    }
+
+    // =======================================
+    // TAB 4: DETAIL (SUMMARY) RENDERER
+    // =======================================
+    function viewLogDetails(id) {
+      const log = logs.find(l => l.id === id);
+      if (!log) return;
+      state.selectedLog = log;
+      navigate('detail');
+    }
+
+    function renderDetail() {
+      const log = state.selectedLog;
+      if (!log) return;
+
+      const elTitle = document.getElementById('detail-title');
+      if (elTitle) elTitle.innerText = `相手: ${log.opponentName} とのもめごと概要書`;
+
+      const elDate = document.getElementById('detail-date');
+      if (elDate) elDate.innerText = log.date;
+
+      const elPT = document.getElementById('detail-placeTime');
+      if (elPT) elPT.innerText = log.placeTime || '場所・時間の記録なし';
+
+      const elSCT = document.getElementById('detail-schoolCallTime');
+      if (elSCT) elSCT.innerText = log.schoolCallTime || '連絡情報なし';
+
+      const elTA = document.getElementById('detail-teacherAction');
+      if (elTA) elTA.innerText = log.teacherAction === 'あり' ? '✓ 対応あり' : '様子見・特になし';
+
+      const detailsSec = document.getElementById('detail-teacherDetails-section');
+      const elTD = document.getElementById('detail-teacherDetails');
+      if (detailsSec && elTD) {
+        if (log.teacherDetails) {
+          detailsSec.classList.remove('hidden');
+          elTD.innerText = log.teacherDetails;
+        } else {
+          detailsSec.classList.add('hidden');
+        }
+      }
+
+      let visitText = '受診なし';
+      if (log.hospitalVisit === 'mine') visitText = 'わが子が受診';
+      else if (log.hospitalVisit === 'opponent') visitText = '相手が受診';
+      else if (log.hospitalVisit === 'both') visitText = '双方が受診';
+      
+      const elHV = document.getElementById('detail-hospitalVisit');
+      if (elHV) elHV.innerText = visitText;
+
+      const elMC = document.getElementById('detail-medicalCertificate');
+      if (elMC) elMC.innerText = log.medicalCertificate === 'あり' ? 'あり' : 'なし';
+
+      const hospDetailsSec = document.getElementById('detail-hospitalDetails-section');
+      const elHD = document.getElementById('detail-hospitalDetails');
+      if (hospDetailsSec && elHD) {
+        if (log.hospitalDetails) {
+          hospDetailsSec.classList.remove('hidden');
+          elHD.innerText = log.hospitalDetails;
+        } else {
+          hospDetailsSec.classList.add('hidden');
+        }
+      }
+
+      const imageSec = document.getElementById('detail-image-section');
+      const attachedContainer = document.getElementById('detail-attached-images-container');
+      if (imageSec && attachedContainer) {
+        attachedContainer.innerHTML = '';
+        const images = log.images || (log.image ? [log.image] : []);
+
+        if (images.length > 0) {
+          imageSec.classList.remove('hidden');
+          images.forEach((imgBase64, idx) => {
+            const imgCard = document.createElement('div');
+            imgCard.className = "flex justify-center bg-slate-50 border-2 border-slate-700 p-2 rounded-xl overflow-hidden max-h-64 relative cursor-pointer hover:opacity-90 transition-all";
+            imgCard.onclick = () => zoomImage(imgBase64);
+            imgCard.innerHTML = `
+              <img src="${imgBase64}" alt="添付画像-${idx + 1}" class="max-h-60 object-contain rounded-lg">
+              <span class="absolute bottom-2 right-2 bg-slate-900/70 backdrop-blur-xs text-white text-[9px] px-2 py-0.5 rounded border border-slate-700">
+                証拠写真 ${idx + 1}
+              </span>
+            `;
+            attachedContainer.appendChild(imgCard);
+          });
+        } else {
+          imageSec.classList.add('hidden');
+        }
+      }
+
+      const consultSec = document.getElementById('detail-consultation-section');
+      const bContainer = document.getElementById('detail-consultation-badges');
+      const detailsBox = document.getElementById('detail-consultationDetails-box');
+      const elCD = document.getElementById('detail-consultationDetails');
+      
+      if (consultSec && bContainer && detailsBox && elCD) {
+        if (log.consultationChild || log.consultationPolice || log.consultationDetails) {
+          consultSec.classList.remove('hidden');
+          bContainer.innerHTML = '';
+          if (log.consultationChild) {
+            bContainer.innerHTML += `<div class="flex items-center gap-1 bg-slate-50 border border-slate-700 px-3 py-1.5 rounded-xl text-[10px] text-slate-900"><i data-lucide="check" class="w-3.5 h-3.5"></i> 児童相談所</div>`;
+          }
+          if (log.consultationPolice) {
+            bContainer.innerHTML += `<div class="flex items-center gap-1 bg-rose-50 border border-slate-700 px-3 py-1.5 rounded-xl text-[10px] text-rose-855"><i data-lucide="check" class="w-3.5 h-3.5"></i> 警察</div>`;
+          }
+
+          if (log.consultationDetails) {
+            detailsBox.classList.remove('hidden');
+            elCD.innerText = log.consultationDetails;
+          } else {
+            detailsBox.classList.add('hidden');
+          }
+        } else {
+          consultSec.classList.add('hidden');
+        }
+      }
+
+      const tContainer = document.getElementById('detail-timeline');
+      if (tContainer) {
+        tContainer.innerHTML = '';
+        if (log.timeline && log.timeline.length > 0) {
+          log.timeline.sort((a, b) => a.time.localeCompare(b.time));
+
+          tContainer.className = "space-y-4 relative before:content-[''] before:absolute before:left-12 before:top-2 before:bottom-2 before:w-[1.5px] before:bg-slate-300";
+          log.timeline.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "flex gap-2.5 items-start relative";
+            div.innerHTML = `
+              <span class="w-10 pt-0.5 text-right text-[9px] text-slate-700 font-mono shrink-0">${item.time}</span>
+              <!-- 詳細タイムライン上の丸いポチ：水色（bg-sky-500）に変更、枠線を濃いグレーに変更 -->
+              <div class="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0 mt-1.5 relative z-10 shadow-xs ring-4 ring-white"></div>
+              <div class="flex-1 bg-slate-50 p-2.5 rounded-xl border border-slate-700">
+                <p class="text-[10px] text-slate-700 leading-relaxed">${item.content}</p>
+              </div>
+            `;
+            tContainer.appendChild(div);
+          });
+        } else {
+          tContainer.className = "py-1";
+          tContainer.innerHTML = `<p class="text-[10px] text-slate-555 italic border border-slate-700 p-3 rounded-xl">時系列タイムラインは登録されていません。</p>`;
+        }
+      }
+
+      const memoSec = document.getElementById('detail-memo-section');
+      const elMemo = document.getElementById('detail-memo');
+      if (memoSec && elMemo) {
+        if (log.memo) {
+          memoSec.classList.remove('hidden');
+          elMemo.innerText = log.memo;
+        } else {
+          memoSec.classList.add('hidden');
+        }
+      }
+
+      const editTimelineBtn = document.getElementById('edit-detail-timeline-btn');
+      if (editTimelineBtn) {
+        editTimelineBtn.onclick = () => handleGoToTimelineTab(log.id);
+      }
+      safeCreateIcons();
+    }
+
+    // =======================================
+    // COOLDOWN BREATHING GUIDE TIMERS
+    // =======================================
+    function startCooldownTimer() {
+      const stateLabel = document.getElementById('breath-state');
+      const textGuide = document.getElementById('breath-instruction');
+      if (!stateLabel || !textGuide) return;
+
+      let count = 0;
+      stateLabel.innerText = "深く吸い込む";
+
+      state.breathCycleTimer = setInterval(() => {
+        count = (count + 1) % 3;
+        if (count === 0) {
+          stateLabel.innerText = "ゆっくり吸う";
+          textGuide.innerHTML = "サークルの広がりに合わせ、鼻からゆっくり息を吸い込みます";
+        } else if (count === 1) {
+          stateLabel.innerText = "少し止める";
+          textGuide.innerHTML = "息を止め、静かにご自身のこころを落ち着かせます";
+        } else {
+          stateLabel.innerText = "全て吐き出す";
+          textGuide.innerHTML = "体の中のモヤモヤ、焦りや不満をすべて吐き出します";
+        }
+      }, 2600);
+    }
+
+    // =======================================
+    // HELPERS & TOAST & DIALOG CONTROLLERS
+    // =======================================
+    function toggleMonsterVibe(checked) {
+      const emojiSpan = document.getElementById('monster-emoji');
+      if (emojiSpan) {
+        emojiSpan.innerText = '💩';
+      }
+      if (checked) {
+        showToast("モンスター認定しました！", "error");
+      } else {
+        showToast("モンスター認定を解除しました");
+      }
+    }
+
+    function handleSyncMonsterState(logId) {
+      const target = logs.find(l => l.id === logId);
+      if (target) {
+        const checkbox = document.getElementById('form-isMonster');
+        if (checkbox) checkbox.checked = !!target.isMonster;
+      }
+    }
+
+    function zoomImage(src) {
+      const modal = document.getElementById('image-zoom-modal');
+      const img = document.getElementById('zoomed-image');
+      if (modal && img) {
+        img.src = src;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeImageZoom() {
+      const modal = document.getElementById('image-zoom-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // テーマカラー水色、枠線を濃いグレーに変更
+    function getRoleBadgeStyle(role) {
+      return 'bg-sky-50 text-sky-900 border border-slate-700';
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const icon = document.getElementById('toast-icon');
+      const text = document.getElementById('toast-message');
+
+      if (!container || !icon || !text) return;
+
+      text.innerText = message;
+      if (type === 'success') {
+        icon.innerHTML = `<i data-lucide="check" class="w-4.5 h-4.5 text-emerald-500 stroke-[2]"></i>`;
+      } else {
+        icon.innerHTML = `<i data-lucide="alert-circle" class="w-4.5 h-4.5 text-rose-500 stroke-[2]"></i>`;
+      }
+      safeCreateIcons();
+
+      container.classList.remove('hidden');
+      container.classList.add('flex');
+      container.classList.add('animate-bounce-short');
+
+      setTimeout(() => {
+        container.classList.add('hidden');
+        container.classList.remove('flex');
+        container.classList.remove('animate-bounce-short');
+      }, 3000);
+    }
+
+    // =======================================
+    // CLIENT-SIDE PDF EXPORTER
+    // =======================================
+    function downloadPDFReport() {
+      const element = document.getElementById('printable-area');
+      if (!element) return;
+      
+      element.classList.add('print-pdf-mode');
+      
+      const opt = {
+        margin:       10,
+        filename:     `もめごと概要書_${state.selectedLog.opponentName}_${state.selectedLog.date}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      showToast("PDFファイルを生成中...", "success");
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.classList.remove('print-pdf-mode');
+        showToast("PDFファイルをダウンロードしました！");
+      }).catch(err => {
+        console.error("html2pdf processing error:", err);
+        element.classList.remove('print-pdf-mode');
+        showToast("PDFの自動生成に失敗しました。時間を置いて再度お試しください。", "error");
+      });
+    }
+
+    function triggerDelete(id) {
+      const targetItem = logs.find(l => l.id === id);
+      if (!targetItem) return;
+
+      const confirmTitle = document.getElementById('confirm-title');
+      const confirmMsg = document.getElementById('confirm-message');
+      const modal = document.getElementById('confirm-modal');
+      
+      if (confirmTitle && confirmMsg && modal) {
+        confirmTitle.innerText = "記録の削除";
+        confirmMsg.innerText = `${targetItem.date} の相手:「${targetItem.opponentName}」の記録を永久に削除します。この操作は元に戻せません。`;
+        
+        const actionBtn = document.getElementById('confirm-action-btn');
+        if (actionBtn) {
+          actionBtn.onclick = function() {
+            logs = logs.filter(l => l.id !== id);
+            if (state.activeTimelineLogId === id) {
+              state.activeTimelineLogId = logs.length > 0 ? logs[0].id : '';
+            }
+            saveToLocalStorage();
+            closeConfirmModal();
+            showToast("記録を削除しました", "success");
+            navigate('list');
+          };
+        }
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirm-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
